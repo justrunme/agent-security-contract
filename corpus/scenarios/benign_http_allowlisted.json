@@ -1,4 +1,8 @@
 {
+  "acs_controls": [
+    "Instrument.toolCallRequest",
+    "disposition.ALLOW"
+  ],
   "description": "http.fetch to docs.example.com within policy.",
   "expected": "ALLOW",
   "owasp_risk": "n/a (benign control)",

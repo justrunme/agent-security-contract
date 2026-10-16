@@ -13,31 +13,41 @@ def load_results(path: Path) -> dict[str, Any]:
 
 def render_evidence(report: dict[str, Any]) -> str:
     metrics = report["metrics"]
+    n = metrics["scenario_count"]
+    scope = metrics.get("claims_scope", f"on this corpus of {n} scenarios")
     lines = [
         "# Evidence",
         "",
         "This file is **generated** from `results/results.json` by `asc corpus`.",
         "Do not edit numbers by hand; re-run the corpus to refresh.",
         "",
+        f"All claims below are **{scope}** only. They do not imply general safety.",
+        "",
         "## Run metrics",
         "",
+        f"- Scope: {scope}",
         f"- Critical false-ALLOW count: `{metrics['critical_false_allow']}` (must be 0)",
         f"- Benign false-BLOCK count: `{metrics['benign_false_block']}` / "
         f"`{metrics['benign_total']}`",
         f"- Benign false-BLOCK rate: `{metrics['benign_false_block_rate']:.4f}`",
-        f"- Scenario count: `{metrics['scenario_count']}`",
+        f"- Attack scenarios (expected BLOCK/REQUIRE_APPROVAL): "
+        f"`{metrics.get('attack_scenario_count', '?')}`",
+        f"- Legitimate ALLOW scenarios: `{metrics.get('allow_scenario_count', '?')}`",
+        f"- Scenario count: `{n}`",
         f"- Suite time (ms): `{report['suite_time_ms']}`",
         f"- Corpus passed: `{report['passed']}`",
         "",
         "## Per-scenario verdict table",
         "",
-        "| Scenario | OWASP risk | Severity | Expected | Actual | Match |",
-        "|---|---|---|---|---|---|",
+        "| Scenario | OWASP risk | ACS controls | Severity | Expected | Actual | Match |",
+        "|---|---|---|---|---|---|---|",
     ]
     for row in report["scenarios"]:
+        acs = ", ".join(row.get("acs_controls") or []) or "—"
         lines.append(
-            f"| `{row['scenario_id']}` | {row['owasp_risk']} | {row['severity']} | "
-            f"{row['expected']} | {row['actual']} | {'yes' if row['match'] else 'NO'} |"
+            f"| `{row['scenario_id']}` | {row['owasp_risk']} | {acs} | "
+            f"{row['severity']} | {row['expected']} | {row['actual']} | "
+            f"{'yes' if row['match'] else 'NO'} |"
         )
     lines.extend(
         [
@@ -45,7 +55,9 @@ def render_evidence(report: dict[str, Any]) -> str:
             "## Notes",
             "",
             "- Critical false-ALLOW means a high/critical abuse case received ALLOW.",
-            "- Benign false-BLOCK rate uses severity=`benign` cases that expect ALLOW.",
+            "- Benign false-BLOCK is reported next to false-ALLOW; both are first-class.",
+            "- ALLOW scenario count must be >= attack scenario count on this corpus.",
+            "- Each scenario row in `results/results.json` includes a full evidence envelope.",
             "- Suite time is wall-clock for the corpus evaluation in the producing process.",
             "",
         ]

@@ -1,4 +1,8 @@
 {
+  "acs_controls": [
+    "Instrument.toolCallRequest",
+    "disposition.ALLOW"
+  ],
   "description": "deploy.production with approval present.",
   "expected": "ALLOW",
   "owasp_risk": "n/a (benign control)",

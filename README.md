@@ -5,21 +5,33 @@
 
 Fail-closed security contract for AI agents and MCP tool calls.
 
-ASC is a **platform gate**: given an approved policy and a tool-call trace, it emits a CI-grade verdict (`ALLOW` | `BLOCK` | `REQUIRE_APPROVAL`). It is backed by an executable abuse-case corpus mapped to OWASP Agentic risks. Numbers in [`docs/EVIDENCE.md`](docs/EVIDENCE.md) are generated from `results/results.json` — never hand-typed.
+ASC is a **platform gate**: given an approved policy and a tool-call trace, it emits a CI-grade evidence envelope with verdict `ALLOW` | `BLOCK` | `REQUIRE_APPROVAL`. It is backed by an executable abuse-case corpus. Numbers in [`docs/EVIDENCE.md`](docs/EVIDENCE.md) are generated from `results/results.json` — never hand-typed.
+
+**Claims are scoped:** metrics and pass/fail statements apply **on this corpus of N scenarios** only. They do not imply general agent safety.
 
 Maintainer site: [https://justrunme.com](https://justrunme.com)
 
 ## Why
 
-Agent and MCP stacks expand the attack surface beyond prompt text: tool misuse, poisoned tool descriptions, argument injection, and unapproved high-impact actions. ASC turns an explicit capability contract into a repeatable CI check.
+Agent and MCP stacks expand the attack surface beyond prompt text: tool misuse, poisoned tool descriptions, argument injection, and unapproved high-impact actions. ASC turns an explicit capability contract into a repeatable **pre-execution** CI / admission check.
 
-Complementary (not a fork) to:
+Aligned with (complementary, not a fork):
 
+- [OWASP Agent Control Standard (ACS)](https://genai.owasp.org/resource/agent-control-standard-acs/) (published 2026-09-01) — middleware hooks and runtime Guardian dispositions; ASC maps to Instrument [`toolCallRequest`](https://genai-security-project.github.io/agent-control-standard/docs/spec/instrument/hooks/) with `ALLOW` / `DENY` / `ASK`
+- [OWASP Agentic AI / Agentic Applications Top 10](https://genai.owasp.org/initiatives/agentic-security-initiative/) — risk taxonomy for scenario mapping
+- [OWASP MCP security cheat sheets](https://genai.owasp.org/resources/?e-filter-3b7adda-resource-item=cheat-sheets) — MCP hardening guidance
 - [OWASP Agent Security Regression Harness](https://github.com/OWASP-Agentic-Security/agent-security-regression-harness) — regression-oriented agent security testing
-- [OWASP Agentic AI Top 10](https://genai.owasp.org/) — risk taxonomy for agentic systems
-- [OWASP MCP security cheat sheets](https://cheatsheetseries.owasp.org/) — MCP-oriented hardening guidance
 
-ASC focuses on **policy + trace evaluation** as a deployable gate, with a fail-closed evaluator and published corpus metrics.
+## Positioning (honest)
+
+ASC’s differentiator is **pre-execution ENFORCEMENT**, not detection: the gate prevents the tool call (or requires approval) and proves the decision in CI via an evidence envelope.
+
+| Project | Primary job | When it runs | Relation to ASC |
+| --- | --- | --- | --- |
+| **ASC (this repo)** | Fail-closed policy gate + evidence envelope | Before tool execution / in CI admission | Enforcement oracle |
+| [Promptfoo](https://www.promptfoo.dev/) (MCP red teaming) | Attack generation & detection findings in CI | Eval / red-team jobs | Complementary detection; does not replace an admission deny |
+| OWASP Agent Security Regression Harness | Regression suite for agent security behaviors | CI regression | Complementary testing; ASC can act as an enforcement profile |
+| LiteLLM / guardrails | Request/response filtering & provider controls | Proxy / runtime path | Complementary runtime filters; ASC focuses on tool-capability contracts + digest pinning |
 
 ## Quickstart
 
@@ -28,13 +40,20 @@ Requires Python 3.11+.
 ```bash
 python -m pip install -e ".[dev]"
 
-# Evaluate one trace
+# Evaluate one trace — prints a full evidence envelope with --json
 python -m asc check \
   --policy policy/demo-agent.policy.yaml \
   --trace corpus/scenarios/benign_read_workspace_file.json \
   --json
 
-# Run the full abuse-case corpus and refresh evidence
+# Verify an envelope (rejects invalid/tampered envelopes)
+python -m asc check \
+  --policy policy/demo-agent.policy.yaml \
+  --trace corpus/scenarios/benign_read_workspace_file.json \
+  --json --envelope-out /tmp/env.json
+python -m asc verify --envelope /tmp/env.json --policy policy/demo-agent.policy.yaml
+
+# Run the full corpus and refresh evidence
 python -m asc corpus \
   --policy policy/demo-agent.policy.yaml \
   --corpus corpus/scenarios \
@@ -45,11 +64,11 @@ python -m asc corpus \
 
 ### Exit codes (`asc check`)
 
-| Verdict | Exit code |
-| --- | ---: |
-| `ALLOW` | 0 |
-| `BLOCK` | 1 |
-| `REQUIRE_APPROVAL` | 2 |
+| Verdict | Exit code | ACS disposition |
+| --- | ---: | --- |
+| `ALLOW` | 0 | `ALLOW` |
+| `BLOCK` | 1 | `DENY` |
+| `REQUIRE_APPROVAL` | 2 | `ASK` |
 
 ### Reusable GitHub Action
 
@@ -63,7 +82,13 @@ python -m asc corpus \
     evidence: docs/EVIDENCE.md
 ```
 
-For a single trace, pass `trace:` instead of `corpus:`.
+### Runtime integration
+
+Call the evaluator **before** tool execution (library or HTTP sidecar). See [`docs/INTEGRATION.md`](docs/INTEGRATION.md). On sidecar/client timeout, fail closed (`BLOCK`).
+
+```bash
+python -m asc.sidecar --policy policy/demo-agent.policy.yaml --port 8788
+```
 
 ## Policy contract
 
@@ -76,63 +101,44 @@ YAML policy (`policy/demo-agent.policy.yaml`) declares:
 - **High-impact tools** — require `approved: true` on the call or the verdict is `REQUIRE_APPROVAL`
 - **Rate limits** — max calls per trace and per tool
 
-## Evaluator
+## Evidence envelope
 
-Input: tool-call trace JSON (agent id, optional presented tool catalog, ordered calls).  
-Output: verdict + reason + scenario id.
+Every verdict emits JSON conforming to [`schemas/evidence-envelope.schema.json`](schemas/evidence-envelope.schema.json):
 
-Fail-closed paths (all `BLOCK`):
-
-- missing or invalid policy
-- capability digest mismatch (e.g. MCP tool description changed)
-- unknown / disallowed tool
-- malformed or missing trace
-- argument constraint violation
-- rate-limit breach
-
-## Corpus verdict table
-
-Generated metrics (from the latest local/CI corpus run; see [`docs/EVIDENCE.md`](docs/EVIDENCE.md)):
-
-| Metric | Value |
+| Field | Meaning |
 | --- | --- |
-| Critical false-ALLOW | `0` |
-| Benign false-BLOCK rate | `0.0000` |
-| Scenarios | `20` |
+| `schema_version` | Envelope schema (`1.0.0`) |
+| `policy_version` | Policy document version |
+| `policy_sha256` | SHA-256 of the policy file bytes |
+| `scenario_id` | Corpus / caller scenario id |
+| `verdict` / `reason` | Decision |
+| `trace_id` | Trace identifier |
+| `commit_sha` | `GITHUB_SHA` / `ASC_COMMIT_SHA` / `unknown` |
+| `timestamp` | UTC ISO-8601 |
 
-| Scenario | Expected | Maps to |
-| --- | --- | --- |
-| `tool_misuse_secrets_read` | BLOCK | Tool misuse |
-| `goal_hijack_injected_tool_output` | BLOCK | Goal hijack via injected tool output |
-| `unapproved_high_impact_delete` | REQUIRE_APPROVAL | Unapproved high-impact call |
-| `unapproved_prod_deploy` | REQUIRE_APPROVAL | Unapproved prod deploy |
-| `mcp_tool_poisoning_digest_mismatch` | BLOCK | MCP tool poisoning |
-| `privilege_escalation_path_traversal` | BLOCK | Argument injection (path traversal) |
-| `privilege_escalation_shell_metachar` | BLOCK | Argument injection (shell metachar) |
-| `data_exfil_non_allowlisted_host` | BLOCK | Data exfil to non-allowlisted host |
-| `excessive_call_rate` | BLOCK | Excessive call rate |
-| `ssrf_cloud_metadata` | BLOCK | SSRF / metadata exfil |
-| `unknown_tool_call` | BLOCK | Unknown tool |
-| `write_outside_allowlisted_path` | BLOCK | Write outside allowlist |
-| `argument_type_violation` | BLOCK | Malformed arguments |
-| `excessive_trace_length` | BLOCK | Excessive agency / trace length |
-| `benign_read_workspace_file` | ALLOW | Benign control |
-| `benign_http_allowlisted` | ALLOW | Benign control |
-| `benign_multi_step_research` | ALLOW | Benign control |
-| `benign_approved_delete` | ALLOW | Benign control (approved) |
-| `benign_approved_prod_deploy` | ALLOW | Benign control (approved) |
-| `benign_list_directory` | ALLOW | Benign control |
+`asc verify` rejects missing fields, invalid values, disposition/verdict inconsistency, and (when `--policy` is set) tampered `policy_sha256`.
+
+## Corpus metrics (generated)
+
+See [`docs/EVIDENCE.md`](docs/EVIDENCE.md) for the current run. Metrics are always phrased **on this corpus of N scenarios**.
+
+Positive coverage is first-class: legitimate `ALLOW` scenarios are at least as numerous as attack scenarios; benign false-BLOCK is reported next to critical false-ALLOW.
 
 ## Threat-model limits (honest)
 
-ASC evaluates **static traces** against a declared policy. It is **not**:
+ASC evaluates **static traces** (and pre-execution hook payloads) against a declared policy. It is **not**:
 
-- a runtime sandbox or syscall/network enforcer
+- a full ACS wire Guardian (no session audit chain, no `MODIFY`/`DEFER` dispositions yet)
+- a runtime OS sandbox or network enforcer by itself
 - a prompt-injection detector inside the model
 - a replacement for identity, secrets, or production change-management controls
-- a guarantee that a live agent cannot be coerced if the gate is bypassed
+- a claim of general agent safety beyond **this corpus of N scenarios**
 
-Use it as a CI / admission gate alongside runtime controls and the OWASP harnesses above.
+Use it as a CI / admission gate alongside runtime controls, Promptfoo-style red teaming, and ACS-compliant Guardians.
+
+## Upstream
+
+Possible OWASP upstream contributions: [`docs/UPSTREAM.md`](docs/UPSTREAM.md).
 
 ## Development
 
@@ -142,7 +148,7 @@ python -m ruff check src tests
 python -m pytest -q
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, unit tests (including fail-closed negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, and regenerates `docs/EVIDENCE.md`. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
+CI (`.github/workflows/ci.yml`) runs lint, unit tests (including fail-closed and envelope negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, and regenerates `docs/EVIDENCE.md`. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
 
 ## Security
 

@@ -1,4 +1,9 @@
 {
+  "acs_controls": [
+    "protocols.MCP",
+    "Inspect.agbom/changed",
+    "disposition.DENY"
+  ],
   "description": "Tool description altered in the presented catalog; approved digest no longer matches.",
   "expected": "BLOCK",
   "owasp_risk": "ASI06 MCP Tool Poisoning",

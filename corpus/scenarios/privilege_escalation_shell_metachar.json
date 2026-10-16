@@ -1,4 +1,8 @@
 {
+  "acs_controls": [
+    "Instrument.toolCallRequest",
+    "disposition.DENY"
+  ],
   "description": "Command chaining via ; and rm must be blocked by deny_patterns.",
   "expected": "BLOCK",
   "owasp_risk": "ASI01 Tool Misuse / Argument Injection",

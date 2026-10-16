@@ -1,4 +1,8 @@
 {
+  "acs_controls": [
+    "Instrument.toolCallRequest",
+    "disposition.ASK"
+  ],
   "description": "filesystem.delete is allowlisted but high-impact and lacks approval.",
   "expected": "REQUIRE_APPROVAL",
   "owasp_risk": "ASI01 Tool Misuse / High-Impact Action",

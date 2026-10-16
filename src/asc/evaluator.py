@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from asc.digest import compute_capability_digest
+from asc.envelope import build_envelope
 from asc.models import (
     AgentPolicy,
     ArgConstraint,
@@ -248,6 +250,48 @@ def evaluate_paths(
     except TraceError as exc:
         return _block(f"invalid or malformed trace: {exc}", scenario_id)
     return evaluate(policy, trace, scenario_id=scenario_id)
+
+
+def evaluate_paths_envelope(
+    policy_path: str,
+    trace_path: str,
+    *,
+    scenario_id: str = "adhoc",
+) -> tuple[EvaluationResult, dict[str, Any]]:
+    """Evaluate and return (result, evidence envelope). Always emits an envelope."""
+    policy: Policy | None = None
+    trace: Trace | None = None
+    try:
+        policy = load_policy(policy_path)
+    except PolicyError as exc:
+        result = _block(f"invalid or missing policy: {exc}", scenario_id)
+        envelope = build_envelope(
+            result=result,
+            policy=None,
+            policy_path=policy_path if Path(policy_path).is_file() else None,
+            trace=None,
+            policy_version="unknown",
+        )
+        return result, envelope
+    try:
+        trace = load_trace(trace_path)
+    except TraceError as exc:
+        result = _block(f"invalid or malformed trace: {exc}", scenario_id)
+        envelope = build_envelope(
+            result=result,
+            policy=policy,
+            policy_path=policy_path,
+            trace=None,
+        )
+        return result, envelope
+    result = evaluate(policy, trace, scenario_id=scenario_id)
+    envelope = build_envelope(
+        result=result,
+        policy=policy,
+        policy_path=policy_path,
+        trace=trace,
+    )
+    return result, envelope
 
 
 def evaluate_trace_data(

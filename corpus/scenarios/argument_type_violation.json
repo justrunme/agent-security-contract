@@ -1,4 +1,8 @@
 {
+  "acs_controls": [
+    "Instrument.toolCallRequest",
+    "disposition.DENY"
+  ],
   "description": "url must be a string; object payload is rejected fail-closed.",
   "expected": "BLOCK",
   "owasp_risk": "ASI01 Tool Misuse",
