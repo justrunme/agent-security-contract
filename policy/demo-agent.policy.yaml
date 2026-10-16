@@ -1,0 +1,155 @@
+version: "1"
+capability_digest: "sha256:7a3f16063ce5d78b381b20adf4d46a6f2b0a79269e79d4e15adfba4894bfae01"
+
+capabilities:
+  - name: filesystem.read
+    description: "Read a UTF-8 text file from the workspace."
+    input_schema:
+      type: object
+      properties:
+        path:
+          type: string
+      required: [path]
+  - name: filesystem.list
+    description: "List files under a workspace directory."
+    input_schema:
+      type: object
+      properties:
+        path:
+          type: string
+      required: [path]
+  - name: filesystem.write
+    description: "Write a UTF-8 text file inside the workspace."
+    input_schema:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required: [path, content]
+  - name: filesystem.delete
+    description: "Delete a file inside the workspace. High impact."
+    input_schema:
+      type: object
+      properties:
+        path:
+          type: string
+      required: [path]
+  - name: http.fetch
+    description: "Fetch a URL over HTTPS from allowlisted hosts."
+    input_schema:
+      type: object
+      properties:
+        url:
+          type: string
+      required: [url]
+  - name: shell.exec
+    description: "Execute a constrained shell command."
+    input_schema:
+      type: object
+      properties:
+        command:
+          type: string
+      required: [command]
+  - name: deploy.production
+    description: "Deploy a build artifact to the production environment. High impact."
+    input_schema:
+      type: object
+      properties:
+        service:
+          type: string
+        version:
+          type: string
+      required: [service, version]
+  - name: secrets.read
+    description: "Read a named secret from the vault."
+    input_schema:
+      type: object
+      properties:
+        name:
+          type: string
+      required: [name]
+
+agents:
+  demo-agent:
+    allowed_tools:
+      - name: filesystem.read
+        args:
+          path:
+            type: string
+            pattern: "^/workspace/"
+            deny_patterns:
+              - "\\.\\./"
+              - "(?i)\\betc/passwd\\b"
+            max_length: 512
+      - name: filesystem.list
+        args:
+          path:
+            type: string
+            pattern: "^/workspace/"
+            deny_patterns:
+              - "\\.\\./"
+            max_length: 512
+      - name: filesystem.write
+        args:
+          path:
+            type: string
+            pattern: "^/workspace/out/"
+            deny_patterns:
+              - "\\.\\./"
+            max_length: 512
+          content:
+            type: string
+            max_length: 65536
+      - name: filesystem.delete
+        args:
+          path:
+            type: string
+            pattern: "^/workspace/out/"
+            deny_patterns:
+              - "\\.\\./"
+            max_length: 512
+      - name: http.fetch
+        args:
+          url:
+            type: string
+            pattern: "^https://"
+            allow_hosts:
+              - api.example.com
+              - docs.example.com
+            deny_patterns:
+              - "(?i)169\\.254\\."
+              - "(?i)metadata\\.google"
+            max_length: 2048
+      - name: shell.exec
+        args:
+          command:
+            type: string
+            pattern: "^(ls|cat|echo)(\\s|$)"
+            deny_patterns:
+              - "[;&|`$]"
+              - "\\n"
+              - "(?i)\\brm\\b"
+              - "(?i)\\bcurl\\b"
+              - "(?i)\\bwget\\b"
+            max_length: 256
+      - name: deploy.production
+        args:
+          service:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+            max_length: 64
+          version:
+            type: string
+            pattern: "^v?[0-9]+\\.[0-9]+\\.[0-9]+$"
+            max_length: 32
+      # secrets.read is intentionally absent from the allowlist (privilege boundary)
+    high_impact_tools:
+      - filesystem.delete
+      - deploy.production
+    rate_limits:
+      max_calls_per_trace: 20
+      max_calls_per_tool:
+        http.fetch: 8
+        shell.exec: 5
