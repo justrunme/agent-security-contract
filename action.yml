@@ -1,0 +1,95 @@
+name: "ASC Check"
+description: "Fail-closed Agent Security Contract evaluation for AI agent / MCP tool-call traces"
+author: "Andrey Lesnikov"
+
+inputs:
+  policy:
+    description: "Path to ASC policy YAML"
+    required: true
+  trace:
+    description: "Path to a single tool-call trace JSON (mutually exclusive with corpus)"
+    required: false
+    default: ""
+  corpus:
+    description: "Directory of corpus scenario JSON files (mutually exclusive with trace)"
+    required: false
+    default: ""
+  results:
+    description: "Output path for corpus results JSON"
+    required: false
+    default: "results/results.json"
+  summary:
+    description: "Output path for corpus markdown summary"
+    required: false
+    default: "results/summary.md"
+  evidence:
+    description: "Optional output path for docs/EVIDENCE.md"
+    required: false
+    default: ""
+  python-version:
+    description: "Python version used to run ASC"
+    required: false
+    default: "3.12"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install ASC
+      shell: bash
+      env:
+        ASC_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        python -m pip install --upgrade pip
+        python -m pip install "${ASC_ACTION_PATH}"
+
+    - name: Validate inputs
+      shell: bash
+      env:
+        ASC_TRACE: ${{ inputs.trace }}
+        ASC_CORPUS: ${{ inputs.corpus }}
+      run: |
+        set -euo pipefail
+        if [[ -n "${ASC_TRACE}" && -n "${ASC_CORPUS}" ]] || [[ -z "${ASC_TRACE}" && -z "${ASC_CORPUS}" ]]; then
+          echo "::error::set exactly one of 'trace' or 'corpus'"
+          exit 1
+        fi
+
+    - name: Run ASC check (single trace)
+      if: ${{ inputs.trace != '' }}
+      shell: bash
+      env:
+        ASC_POLICY: ${{ inputs.policy }}
+        ASC_TRACE: ${{ inputs.trace }}
+      run: python -m asc check --policy "${ASC_POLICY}" --trace "${ASC_TRACE}" --json
+
+    - name: Run ASC corpus
+      if: ${{ inputs.corpus != '' }}
+      shell: bash
+      env:
+        ASC_POLICY: ${{ inputs.policy }}
+        ASC_CORPUS: ${{ inputs.corpus }}
+        ASC_RESULTS: ${{ inputs.results }}
+        ASC_SUMMARY: ${{ inputs.summary }}
+        ASC_EVIDENCE: ${{ inputs.evidence }}
+      run: |
+        set -euo pipefail
+        extra=()
+        if [[ -n "${ASC_EVIDENCE}" ]]; then
+          extra+=(--evidence "${ASC_EVIDENCE}")
+        fi
+        python -m asc corpus \
+          --policy "${ASC_POLICY}" \
+          --corpus "${ASC_CORPUS}" \
+          --results "${ASC_RESULTS}" \
+          --summary "${ASC_SUMMARY}" \
+          "${extra[@]}"
+
+branding:
+  icon: "shield"
+  color: "red"
