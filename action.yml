@@ -1,0 +1,71 @@
+name: "ASC Check"
+description: "Fail-closed Agent Security Contract evaluation for AI agent / MCP tool-call traces"
+author: "Andrey Lesnikov"
+
+inputs:
+  policy:
+    description: "Path to ASC policy YAML"
+    required: true
+  trace:
+    description: "Path to a single tool-call trace JSON (mutually exclusive with corpus)"
+    required: false
+    default: ""
+  corpus:
+    description: "Directory of corpus scenario JSON files (mutually exclusive with trace)"
+    required: false
+    default: ""
+  results:
+    description: "Output path for corpus results JSON"
+    required: false
+    default: "results/results.json"
+  summary:
+    description: "Output path for corpus markdown summary"
+    required: false
+    default: "results/summary.md"
+  evidence:
+    description: "Optional output path for docs/EVIDENCE.md"
+    required: false
+    default: ""
+  python-version:
+    description: "Python version used to run ASC"
+    required: false
+    default: "3.12"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install ASC
+      shell: bash
+      run: python -m pip install --upgrade pip && python -m pip install .
+
+    - name: Run ASC check (single trace)
+      if: ${{ inputs.trace != '' }}
+      shell: bash
+      run: python -m asc check --policy "${{ inputs.policy }}" --trace "${{ inputs.trace }}" --json
+
+    - name: Run ASC corpus
+      if: ${{ inputs.corpus != '' }}
+      shell: bash
+      env:
+        ASC_EVIDENCE: ${{ inputs.evidence }}
+      run: |
+        set -euo pipefail
+        extra=()
+        if [[ -n "${ASC_EVIDENCE}" ]]; then
+          extra+=(--evidence "${ASC_EVIDENCE}")
+        fi
+        python -m asc corpus \
+          --policy "${{ inputs.policy }}" \
+          --corpus "${{ inputs.corpus }}" \
+          --results "${{ inputs.results }}" \
+          --summary "${{ inputs.summary }}" \
+          "${extra[@]}"
+
+branding:
+  icon: "shield"
+  color: "red"

@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/mvp-contract]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-test-corpus:
+    name: Lint, unit tests, corpus evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install package and dev tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: python -m ruff check src tests
+
+      - name: Unit tests (includes fail-closed negatives)
+        run: python -m pytest -q
+
+      - name: Run full corpus and generate evidence
+        run: |
+          python -m asc corpus \
+            --policy policy/demo-agent.policy.yaml \
+            --corpus corpus/scenarios \
+            --results results/results.json \
+            --summary results/summary.md \
+            --evidence docs/EVIDENCE.md
+
+      - name: Guard critical false-ALLOW is zero
+        run: |
+          python - <<'PY'
+          import json, sys
+          report = json.loads(open("results/results.json", encoding="utf-8").read())
+          cfa = report["metrics"]["critical_false_allow"]
+          print(f"critical_false_allow={cfa}")
+          print(f"benign_false_block_rate={report['metrics']['benign_false_block_rate']:.4f}")
+          print(f"suite_time_ms={report['suite_time_ms']}")
+          if cfa != 0:
+              sys.exit("critical false-ALLOW must be 0")
+          if not report["passed"]:
+              sys.exit("corpus did not pass")
+          PY
+
+      - name: Upload corpus artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: asc-corpus-results
+          path: |
+            results/results.json
+            results/summary.md
+            docs/EVIDENCE.md
