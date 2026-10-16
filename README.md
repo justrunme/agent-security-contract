@@ -1,6 +1,6 @@
 # agent-security-contract
 
-[![CI](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml/badge.svg?branch=feat/mvp-contract)](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml)
+[![CI](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Fail-closed security contract for AI agents and MCP tool calls.
@@ -20,7 +20,7 @@ Aligned with (complementary, not a fork):
 - [OWASP Agent Control Standard (ACS)](https://genai.owasp.org/resource/agent-control-standard-acs/) (published 2026-09-01) — middleware hooks and runtime Guardian dispositions; ASC maps to Instrument [`toolCallRequest`](https://genai-security-project.github.io/agent-control-standard/docs/spec/instrument/hooks/) with `ALLOW` / `DENY` / `ASK`
 - [OWASP Agentic AI / Agentic Applications Top 10](https://genai.owasp.org/initiatives/agentic-security-initiative/) — risk taxonomy for scenario mapping
 - [OWASP MCP security cheat sheets](https://genai.owasp.org/resources/?e-filter-3b7adda-resource-item=cheat-sheets) — MCP hardening guidance
-- [OWASP Agent Security Regression Harness](https://github.com/OWASP-Agentic-Security/agent-security-regression-harness) — regression-oriented agent security testing
+- [OWASP Agent Security Regression Harness](https://github.com/OWASP/Agent-Security-Regression-Harness) — regression-oriented agent security testing
 
 ## Positioning (honest)
 
@@ -73,7 +73,7 @@ python -m asc corpus \
 ### Reusable GitHub Action
 
 ```yaml
-- uses: justrunme/agent-security-contract@feat/mvp-contract
+- uses: justrunme/agent-security-contract@v0.1.0
   with:
     policy: policy/demo-agent.policy.yaml
     corpus: corpus/scenarios
@@ -84,7 +84,7 @@ python -m asc corpus \
 
 ### Runtime integration
 
-Call the evaluator **before** tool execution (library or HTTP sidecar). See [`docs/INTEGRATION.md`](docs/INTEGRATION.md). On sidecar/client timeout, fail closed (`BLOCK`).
+Call the evaluator **before** tool execution (library or HTTP sidecar). See [`docs/INTEGRATION.md`](docs/INTEGRATION.md). On sidecar/client timeout, fail closed (`BLOCK`); `asc.client.evaluate_remote()` does this for you.
 
 ```bash
 python -m asc.sidecar --policy policy/demo-agent.policy.yaml --port 8788
@@ -115,8 +115,11 @@ Every verdict emits JSON conforming to [`schemas/evidence-envelope.schema.json`]
 | `trace_id` | Trace identifier |
 | `commit_sha` | `GITHUB_SHA` / `ASC_COMMIT_SHA` / `unknown` |
 | `timestamp` | UTC ISO-8601 |
+| `envelope_sha256` | SHA-256 over the canonical JSON of all other fields |
 
-`asc verify` rejects missing fields, invalid values, disposition/verdict inconsistency, and (when `--policy` is set) tampered `policy_sha256`.
+`asc verify` rejects missing fields, invalid values, disposition/verdict inconsistency, any edit that no longer matches `envelope_sha256`, and (when `--policy` is set) a `policy_sha256` that differs from the policy file.
+
+`envelope_sha256` is an unkeyed integrity digest, not a signature: it catches accidental or naive edits, but someone who can rewrite the file can also recompute it. Treat envelopes as trustworthy only when they come from a CI run you control (for example, the uploaded workflow artifact).
 
 ## Corpus metrics (generated)
 
@@ -128,6 +131,7 @@ Positive coverage is first-class: legitimate `ALLOW` scenarios are at least as n
 
 ASC evaluates **static traces** (and pre-execution hook payloads) against a declared policy. It is **not**:
 
+- a signer: evidence envelopes carry an integrity digest but no signature or attestation yet
 - a full ACS wire Guardian (no session audit chain, no `MODIFY`/`DEFER` dispositions yet)
 - a runtime OS sandbox or network enforcer by itself
 - a prompt-injection detector inside the model

@@ -5,7 +5,7 @@
   ],
   "description": "Command chaining via ; and rm must be blocked by deny_patterns.",
   "expected": "BLOCK",
-  "owasp_risk": "ASI01 Tool Misuse / Argument Injection",
+  "owasp_risk": "ASI05 Unexpected Code Execution / Shell Metacharacters",
   "scenario_id": "privilege_escalation_shell_metachar",
   "severity": "critical",
   "title": "Shell metacharacter injection",

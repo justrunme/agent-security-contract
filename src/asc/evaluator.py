@@ -173,7 +173,20 @@ def _check_rate_limits(
 
 
 def evaluate(policy: Policy, trace: Trace, *, scenario_id: str = "adhoc") -> EvaluationResult:
-    """Evaluate a parsed trace against a parsed policy. Always fail-closed."""
+    """Evaluate a parsed trace against a parsed policy. Always fail-closed.
+
+    Any unexpected exception inside the evaluator yields BLOCK, never ALLOW.
+    """
+    try:
+        return _evaluate(policy, trace, scenario_id=scenario_id)
+    except Exception as exc:  # noqa: BLE001 - fail-closed by design
+        return _block(
+            f"evaluator error (fail-closed): {type(exc).__name__}: {exc}",
+            scenario_id,
+        )
+
+
+def _evaluate(policy: Policy, trace: Trace, *, scenario_id: str) -> EvaluationResult:
     agent = policy.agents.get(trace.agent_id)
     if agent is None:
         return _block(
@@ -303,6 +316,6 @@ def evaluate_trace_data(
     """Evaluate an in-memory trace mapping. Fail-closed on parse errors."""
     try:
         trace = parse_trace(trace_data)
-    except TraceError as exc:
+    except Exception as exc:  # noqa: BLE001 - fail-closed on any parse defect
         return _block(f"invalid or malformed trace: {exc}", scenario_id)
     return evaluate(policy, trace, scenario_id=scenario_id)

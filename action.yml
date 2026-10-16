@@ -41,17 +41,41 @@ runs:
 
     - name: Install ASC
       shell: bash
-      run: python -m pip install --upgrade pip && python -m pip install .
+      env:
+        ASC_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        python -m pip install --upgrade pip
+        python -m pip install "${ASC_ACTION_PATH}"
+
+    - name: Validate inputs
+      shell: bash
+      env:
+        ASC_TRACE: ${{ inputs.trace }}
+        ASC_CORPUS: ${{ inputs.corpus }}
+      run: |
+        set -euo pipefail
+        if [[ -n "${ASC_TRACE}" && -n "${ASC_CORPUS}" ]] || [[ -z "${ASC_TRACE}" && -z "${ASC_CORPUS}" ]]; then
+          echo "::error::set exactly one of 'trace' or 'corpus'"
+          exit 1
+        fi
 
     - name: Run ASC check (single trace)
       if: ${{ inputs.trace != '' }}
       shell: bash
-      run: python -m asc check --policy "${{ inputs.policy }}" --trace "${{ inputs.trace }}" --json
+      env:
+        ASC_POLICY: ${{ inputs.policy }}
+        ASC_TRACE: ${{ inputs.trace }}
+      run: python -m asc check --policy "${ASC_POLICY}" --trace "${ASC_TRACE}" --json
 
     - name: Run ASC corpus
       if: ${{ inputs.corpus != '' }}
       shell: bash
       env:
+        ASC_POLICY: ${{ inputs.policy }}
+        ASC_CORPUS: ${{ inputs.corpus }}
+        ASC_RESULTS: ${{ inputs.results }}
+        ASC_SUMMARY: ${{ inputs.summary }}
         ASC_EVIDENCE: ${{ inputs.evidence }}
       run: |
         set -euo pipefail
@@ -60,10 +84,10 @@ runs:
           extra+=(--evidence "${ASC_EVIDENCE}")
         fi
         python -m asc corpus \
-          --policy "${{ inputs.policy }}" \
-          --corpus "${{ inputs.corpus }}" \
-          --results "${{ inputs.results }}" \
-          --summary "${{ inputs.summary }}" \
+          --policy "${ASC_POLICY}" \
+          --corpus "${ASC_CORPUS}" \
+          --results "${ASC_RESULTS}" \
+          --summary "${ASC_SUMMARY}" \
           "${extra[@]}"
 
 branding:

@@ -143,3 +143,21 @@ def test_compute_digest_used_in_evaluate(policy) -> None:
     assert observed == policy.capability_digest
     result = evaluate(policy, parse_trace(_minimal_trace()), scenario_id="digest-ok")
     assert result.verdict == Verdict.ALLOW
+
+
+def test_evaluator_exception_blocks(policy, monkeypatch) -> None:
+    """An unexpected exception inside the evaluator must yield BLOCK, not crash or ALLOW."""
+    import asc.evaluator as ev
+
+    def boom(*_a, **_k):
+        raise RuntimeError("injected failure")
+
+    monkeypatch.setattr(ev, "_check_rate_limits", boom)
+    trace = ev.parse_trace(_minimal_trace())
+    result = ev.evaluate(policy, trace, scenario_id="evaluator-exception")
+    assert result.verdict == Verdict.BLOCK
+    assert "evaluator error" in result.reason
+
+
+def test_non_mapping_trace_blocks(policy) -> None:
+    assert evaluate_trace_data(policy, ["not", "a", "dict"]).verdict == Verdict.BLOCK

@@ -65,3 +65,52 @@ jobs:
             results/results.json
             results/summary.md
             docs/EVIDENCE.md
+
+  action-self-test:
+    name: Reusable action self-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Corpus via action
+        uses: ./
+        with:
+          policy: policy/demo-agent.policy.yaml
+          corpus: corpus/scenarios
+          results: /tmp/asc/results.json
+          summary: /tmp/asc/summary.md
+
+      - name: Benign trace via action is ALLOW
+        uses: ./
+        with:
+          policy: policy/demo-agent.policy.yaml
+          trace: corpus/scenarios/benign_read_workspace_file.json
+
+      - name: Attack trace via action must fail the step
+        id: attack
+        continue-on-error: true
+        uses: ./
+        with:
+          policy: policy/demo-agent.policy.yaml
+          trace: corpus/scenarios/unknown_tool_call.json
+
+      - name: Injection-shaped input is treated as data, not shell
+        id: inject
+        continue-on-error: true
+        uses: ./
+        with:
+          policy: 'policy/demo-agent.policy.yaml"; touch /tmp/asc-pwned; echo "'
+          trace: corpus/scenarios/benign_read_workspace_file.json
+
+      - name: Assert action outcomes
+        env:
+          ATTACK_OUTCOME: ${{ steps.attack.outcome }}
+          INJECT_OUTCOME: ${{ steps.inject.outcome }}
+        run: |
+          set -euo pipefail
+          test -s /tmp/asc/results.json
+          python3 -c "import json,sys; r=json.load(open('/tmp/asc/results.json')); sys.exit(0 if r['passed'] and r['metrics']['critical_false_allow']==0 else 1)"
+          test "${ATTACK_OUTCOME}" = "failure"
+          test "${INJECT_OUTCOME}" = "failure"
+          test ! -e /tmp/asc-pwned

@@ -5,7 +5,7 @@
   ],
   "description": "url must be a string; object payload is rejected fail-closed.",
   "expected": "BLOCK",
-  "owasp_risk": "ASI01 Tool Misuse",
+  "owasp_risk": "ASI02 Tool Misuse & Exploitation",
   "scenario_id": "argument_type_violation",
   "severity": "high",
   "title": "Argument type violation on http.fetch",

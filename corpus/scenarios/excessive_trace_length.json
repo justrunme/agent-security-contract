@@ -5,7 +5,7 @@
   ],
   "description": "More than 20 calls in one trace.",
   "expected": "BLOCK",
-  "owasp_risk": "ASI04 Resource Overload / Excessive Agency",
+  "owasp_risk": "ASI02 Tool Misuse & Exploitation / Resource Overuse",
   "scenario_id": "excessive_trace_length",
   "severity": "high",
   "title": "Trace exceeds max_calls_per_trace",

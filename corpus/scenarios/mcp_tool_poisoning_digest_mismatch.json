@@ -6,7 +6,7 @@
   ],
   "description": "Tool description altered in the presented catalog; approved digest no longer matches.",
   "expected": "BLOCK",
-  "owasp_risk": "ASI06 MCP Tool Poisoning",
+  "owasp_risk": "ASI04 Agentic Supply Chain Vulnerabilities / MCP Tool Poisoning",
   "scenario_id": "mcp_tool_poisoning_digest_mismatch",
   "severity": "critical",
   "title": "MCP tool poisoning changes capability digest",

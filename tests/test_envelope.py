@@ -123,3 +123,33 @@ def test_build_envelope_uses_trace_id() -> None:
     )
     assert envelope["trace_id"] == "t-benign-list"
     assert envelope["commit_sha"] == "abc123"
+
+
+def test_verify_rejects_consistent_verdict_flip(tmp_path: Path) -> None:
+    """BLOCK -> ALLOW with a matching disposition is still caught by envelope_sha256."""
+    _, envelope = evaluate_paths_envelope(
+        "policy/demo-agent.policy.yaml",
+        "corpus/scenarios/unknown_tool_call.json",
+    )
+    assert envelope["verdict"] == "BLOCK"
+    envelope["verdict"] = "ALLOW"
+    envelope["acs_disposition"] = "ALLOW"
+    path = tmp_path / "flip.json"
+    path.write_text(json.dumps(envelope), encoding="utf-8")
+    assert main(["verify", "--envelope", str(path)]) == EXIT_BLOCK
+    with pytest.raises(EnvelopeError, match="tampered envelope"):
+        verify_envelope(envelope)
+
+
+def test_verify_accepts_untampered_and_rejects_missing_digest(tmp_path: Path) -> None:
+    _, envelope = evaluate_paths_envelope(
+        "policy/demo-agent.policy.yaml",
+        "corpus/scenarios/benign_read_workspace_file.json",
+    )
+    path = tmp_path / "ok.json"
+    path.write_text(json.dumps(envelope), encoding="utf-8")
+    policy = "policy/demo-agent.policy.yaml"
+    assert main(["verify", "--envelope", str(path), "--policy", policy]) == 0
+    del envelope["envelope_sha256"]
+    with pytest.raises(EnvelopeError, match="envelope_sha256"):
+        verify_envelope(envelope)

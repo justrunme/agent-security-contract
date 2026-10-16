@@ -106,3 +106,40 @@ def test_client_transport_failure_fail_closed(sidecar_server: str) -> None:
         timeout=0.2,
     )
     assert unreachable == "BLOCK"
+
+
+def test_shipped_client_times_out_to_block() -> None:
+    """A sidecar that hangs past the client timeout must yield BLOCK."""
+    import socket
+    import time
+
+    from asc.client import evaluate_remote
+
+    srv = socket.socket()
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+
+    def hang() -> None:
+        conn, _ = srv.accept()
+        time.sleep(2.0)
+        conn.close()
+
+    threading.Thread(target=hang, daemon=True).start()
+    start = time.monotonic()
+    body = evaluate_remote(f"http://127.0.0.1:{port}/v1/evaluate", {"trace": {}}, timeout=0.3)
+    assert body["verdict"] == "BLOCK"
+    assert "fail-closed" in body["reason"]
+    assert time.monotonic() - start < 1.5
+    srv.close()
+
+
+def test_shipped_client_unreachable_and_allow(sidecar_server: str) -> None:
+    from asc.client import evaluate_remote
+
+    assert evaluate_remote("http://127.0.0.1:1/v1/evaluate", {}, timeout=0.2)["verdict"] == "BLOCK"
+    scenario = json.loads(open("corpus/scenarios/benign_api_fetch.json", encoding="utf-8").read())
+    body = evaluate_remote(
+        f"{sidecar_server}/v1/evaluate", {"scenario_id": "ok", "trace": scenario["trace"]}
+    )
+    assert body["verdict"] == "ALLOW"

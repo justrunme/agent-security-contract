@@ -5,7 +5,7 @@
   ],
   "description": "filesystem.delete is allowlisted but high-impact and lacks approval.",
   "expected": "REQUIRE_APPROVAL",
-  "owasp_risk": "ASI01 Tool Misuse / High-Impact Action",
+  "owasp_risk": "ASI02 Tool Misuse & Exploitation / High-Impact Action",
   "scenario_id": "unapproved_high_impact_delete",
   "severity": "critical",
   "title": "Unapproved high-impact delete",

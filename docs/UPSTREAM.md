@@ -21,7 +21,7 @@ Contribute a documented mapping from ACS audit-chain fields to a minimal CI evid
 
 Add short, runnable examples under each relevant Agentic Top 10 risk showing a **pre-execution deny** (not only a detection finding), with expected disposition tables.
 
-- [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-2026/) (download resource)
+- [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) (download resource)
 - Initiative: [Agentic Security Initiative](https://genai.owasp.org/initiatives/agentic-security-initiative/)
 
 ## 4. MCP cheat sheets: capability-digest pinning pattern
@@ -29,7 +29,7 @@ Add short, runnable examples under each relevant Agentic Top 10 risk showing a *
 Upstream a short pattern for pinning MCP tool description/schema digests and failing closed on catalog drift (tool poisoning), with a sample policy + negative test.
 
 - [CheatSheet — Securely Using Third-Party MCP Servers](https://genai.owasp.org/resource/cheatsheet-a-practical-guide-for-securely-using-third-party-mcp-servers/)
-- [Practical Guide for Secure MCP Server Development v1.0](https://genai.owasp.org/resource/a-practical-guide-for-secure-mcp-server-development-v1-0/)
+- [Practical Guide for Secure MCP Server Development v1.0](https://genai.owasp.org/resource/a-practical-guide-for-secure-mcp-server-development/)
 
 ## 5. Agent Security Regression Harness: enforcement-gate profile
 

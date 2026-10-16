@@ -13,7 +13,8 @@
     "reason",
     "trace_id",
     "commit_sha",
-    "timestamp"
+    "timestamp",
+    "envelope_sha256"
   ],
   "properties": {
     "schema_version": {
@@ -34,7 +35,11 @@
     },
     "verdict": {
       "type": "string",
-      "enum": ["ALLOW", "BLOCK", "REQUIRE_APPROVAL"]
+      "enum": [
+        "ALLOW",
+        "BLOCK",
+        "REQUIRE_APPROVAL"
+      ]
     },
     "reason": {
       "type": "string",
@@ -53,15 +58,27 @@
       "format": "date-time"
     },
     "blocked_call_id": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "details": {
       "type": "object"
     },
     "acs_disposition": {
       "type": "string",
-      "enum": ["ALLOW", "DENY", "ASK"],
+      "enum": [
+        "ALLOW",
+        "DENY",
+        "ASK"
+      ],
       "description": "OWASP ACS-aligned disposition mapping for toolCallRequest"
+    },
+    "envelope_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 of canonical JSON (sorted keys, compact) of all other fields. Integrity check, not a signature."
     }
   }
 }

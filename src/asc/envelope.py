@@ -44,6 +44,20 @@ REQUIRED_FIELDS = (
 )
 
 
+DIGEST_FIELD = "envelope_sha256"
+
+
+def envelope_digest(envelope: dict[str, Any]) -> str:
+    """SHA-256 over the canonical JSON of every field except the digest itself.
+
+    This is an integrity check against accidental or naive edits. It is not a
+    signature: anyone who can rewrite the file can recompute it.
+    """
+    body = {k: v for k, v in envelope.items() if k != DIGEST_FIELD}
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 class EnvelopeError(Exception):
     """Raised when an evidence envelope is invalid or tampered."""
 
@@ -117,6 +131,7 @@ def build_envelope(
         "details": dict(result.details),
         "acs_disposition": acs_disposition(result.verdict),
     }
+    envelope[DIGEST_FIELD] = envelope_digest(envelope)
     return envelope
 
 
@@ -185,6 +200,12 @@ def verify_envelope(
             f"tampered policy_sha256: envelope has {policy_sha}, "
             f"expected {expected_policy_sha256}"
         )
+
+    digest = envelope.get(DIGEST_FIELD)
+    if not isinstance(digest, str) or _SHA256_RE.match(digest) is None:
+        raise EnvelopeError(f"{DIGEST_FIELD} must match sha256:<64 hex>")
+    if digest != envelope_digest(envelope):
+        raise EnvelopeError(f"tampered envelope: {DIGEST_FIELD} does not match content")
 
     # Reject unknown top-level keys beyond the published schema.
     schema = load_schema()
