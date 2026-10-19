@@ -21,8 +21,18 @@ def _require_mapping(value: Any, label: str) -> dict[str, Any]:
     return value
 
 
+_ARG_CONSTRAINT_KEYS = frozenset(
+    {"type", "pattern", "deny_patterns", "allow_hosts", "max_length", "required"}
+)
+
+
 def _parse_arg_constraint(raw: Any, label: str) -> ArgConstraint:
     data = _require_mapping(raw, label)
+    # Fail closed on unknown keys: a typo such as ``deny_pattern`` or an
+    # unsupported ``default`` must not silently drop a constraint.
+    unknown = sorted(set(data) - _ARG_CONSTRAINT_KEYS)
+    if unknown:
+        raise PolicyError(f"{label} has unknown keys: {', '.join(unknown)}")
     type_name = data.get("type", "any")
     if not isinstance(type_name, str):
         raise PolicyError(f"{label}.type must be a string")

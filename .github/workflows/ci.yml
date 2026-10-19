@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/mvp-contract, feat/optional-args]
+    branches: [main, feat/mvp-contract]
   pull_request:
     branches: [main]
 
