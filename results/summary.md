@@ -2,7 +2,7 @@
 
 Claims scope: **on this corpus of 58 scenarios** (not general safety).
 
-- Suite time (ms): `22`
+- Suite time (ms): `23`
 - Critical false-ALLOW: `0`
 - Benign false-BLOCK: `0` / `29`
 - Benign false-BLOCK rate: `0.0000`
