@@ -130,17 +130,17 @@ agents:
             type: string
             pattern: "^(ls|cat|echo)(\\s|$)"
             deny_patterns:
-              - "[;&|`$]"
+              - "[;&|`$<>{}()'\"\\\\]"
               - "\\n"
               - "(?i)\\brm\\b"
               - "(?i)\\bcurl\\b"
               - "(?i)\\bwget\\b"
-              - "(?i)\\.aws\\b"
-              - "(?i)\\.ssh\\b"
-              - "(?i)\\.kube\\b"
+              - "(?i)(^|[\\s/])\\.aws(/|\\s|$)"
+              - "(?i)(^|[\\s/])\\.ssh(/|\\s|$)"
+              - "(?i)(^|[\\s/])\\.kube(/|\\s|$)"
               - "(?i)/etc/shadow"
               - "(?i)/proc/.*/environ"
-              - "(?i)credentials"
+              - "(?i)(^|/)credentials(\\s|$)"
             max_length: 256
       - name: deploy.production
         args:

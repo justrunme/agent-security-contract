@@ -39,6 +39,11 @@ _DESTRUCTIVE_PATH_TOOLS = frozenset({"filesystem.delete", "filesystem.write"})
 _SHELL_PATH_COMMANDS = frozenset({"cat", "ls"})
 _SHELL_ALLOWED_COMMANDS = frozenset({"cat", "ls", "echo"})
 _WORKSPACE_ROOT = "/workspace"
+# Shell syntax that can redirect I/O, expand to other paths, or unescape
+# separators before the program sees its arguments (brace expansion, quoting,
+# backslash escapes, redirection, subshells). Rejected outright (fail closed).
+_SHELL_FORBIDDEN_CHARS = frozenset("<>{}[]()\\'\"")
+_SHELL_FLAG_RE = re.compile(r"^-[A-Za-z0-9]+$")
 
 
 def _block(
@@ -126,6 +131,10 @@ def _check_arg(
         if _should_canonicalize_arg(name, constraint):
             try:
                 check_value = canonicalize_path(value)
+                # normpath drops a trailing slash; keep it so a directory
+                # argument such as "/workspace/" still matches "^/workspace/".
+                if value.endswith("/") and check_value != "/":
+                    check_value += "/"
             except PathCanonicalizeError as exc:
                 return _block(
                     f"path canonicalization failed for {call.tool}.{name}: {exc}",
@@ -198,6 +207,14 @@ def _check_shell_exec(call: ToolCall, scenario_id: str) -> EvaluationResult | No
             scenario_id,
             call_id=call.call_id,
         )
+    forbidden = sorted({ch for ch in command if ch in _SHELL_FORBIDDEN_CHARS})
+    if forbidden:
+        return _block(
+            "shell.exec forbidden shell syntax: " + " ".join(forbidden),
+            scenario_id,
+            call_id=call.call_id,
+            details={"forbidden": forbidden},
+        )
     parts = command.split()
     if not parts:
         return _block(
@@ -220,7 +237,14 @@ def _check_shell_exec(call: ToolCall, scenario_id: str) -> EvaluationResult | No
                 scenario_id,
                 call_id=call.call_id,
             )
-        for token in parts[1:]:
+        path_tokens = [t for t in parts[1:] if not _SHELL_FLAG_RE.match(t)]
+        if not path_tokens:
+            return _block(
+                f"shell.exec {prog} requires a path argument",
+                scenario_id,
+                call_id=call.call_id,
+            )
+        for token in path_tokens:
             try:
                 canonical = canonicalize_path(token)
             except PathCanonicalizeError as exc:
