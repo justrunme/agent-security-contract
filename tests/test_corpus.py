@@ -11,7 +11,7 @@ from asc.evidence import render_evidence
 def test_corpus_has_expected_size() -> None:
     scenarios = list(Path("corpus/scenarios").glob("*.json"))
     assert len(scenarios) >= 15
-    assert len(scenarios) == 52
+    assert len(scenarios) == 58
 
 
 def test_allow_scenarios_at_least_attack_scenarios() -> None:
@@ -24,8 +24,8 @@ def test_allow_scenarios_at_least_attack_scenarios() -> None:
     allow = sum(1 for s in scenarios if s["expected"] == "ALLOW")
     attack = sum(1 for s in scenarios if s["expected"] != "ALLOW")
     assert allow >= attack
-    assert allow == 26
-    assert attack == 26
+    assert allow == 29
+    assert attack == 29
 
 
 def test_corpus_covers_required_themes() -> None:
@@ -98,6 +98,6 @@ def test_evidence_uses_results_numbers(tmp_path: Path) -> None:
     text = render_evidence(report)
     assert "`0`" in text  # critical false-allow
     assert "`42`" in text
-    assert "on this corpus of 52 scenarios" in text
+    assert f"on this corpus of {len(report['scenarios'])} scenarios" in text
     assert "Benign false-BLOCK" in text
     assert report["scenarios"][0]["scenario_id"] in text
