@@ -11,7 +11,7 @@ from asc.evidence import render_evidence
 def test_corpus_has_expected_size() -> None:
     scenarios = list(Path("corpus/scenarios").glob("*.json"))
     assert len(scenarios) >= 15
-    assert len(scenarios) == 28
+    assert len(scenarios) == 52
 
 
 def test_allow_scenarios_at_least_attack_scenarios() -> None:
@@ -24,8 +24,8 @@ def test_allow_scenarios_at_least_attack_scenarios() -> None:
     allow = sum(1 for s in scenarios if s["expected"] == "ALLOW")
     attack = sum(1 for s in scenarios if s["expected"] != "ALLOW")
     assert allow >= attack
-    assert allow == 14
-    assert attack == 14
+    assert allow == 26
+    assert attack == 26
 
 
 def test_corpus_covers_required_themes() -> None:
@@ -43,6 +43,19 @@ def test_corpus_covers_required_themes() -> None:
         "benign_read_workspace_file",
         "benign_http_allowlisted",
         "benign_multi_step_research",
+        # Policy-bypass regressions (v0.2.0)
+        "shell_exec_aws_credentials",
+        "shell_exec_etc_shadow",
+        "shell_exec_proc_environ",
+        "path_traversal_workspace_parent",
+        "path_traversal_url_encoded",
+        "path_traversal_double_encoded",
+        "path_traversal_slash_slash",
+        "path_traversal_mixed_case",
+        "path_traversal_relative",
+        "approved_delete_parent_escape",
+        "undeclared_extra_argument",
+        "shell_exec_shadow_mixed_case",
     }
     assert required.issubset(ids)
 
@@ -85,6 +98,6 @@ def test_evidence_uses_results_numbers(tmp_path: Path) -> None:
     text = render_evidence(report)
     assert "`0`" in text  # critical false-allow
     assert "`42`" in text
-    assert "on this corpus of 28 scenarios" in text
+    assert "on this corpus of 52 scenarios" in text
     assert "Benign false-BLOCK" in text
     assert report["scenarios"][0]["scenario_id"] in text

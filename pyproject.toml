@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-security-contract"
-version = "0.1.0"
+version = "0.2.0"
 description = "Fail-closed security contract for AI agents and MCP tool calls"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -20,6 +20,7 @@ dependencies = [
 dev = [
   "pytest>=8.0.0",
   "ruff>=0.6.0",
+  "hypothesis>=6.100.0",
 ]
 
 [project.scripts]
