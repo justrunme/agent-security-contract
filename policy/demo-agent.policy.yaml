@@ -123,6 +123,8 @@ agents:
               - "(?i)metadata\\.google"
             max_length: 2048
       - name: shell.exec
+        # Deny-by-default: only ls|cat|echo; evaluator also enforces workspace
+        # path confinement and a sensitive-path denylist on every argument.
         args:
           command:
             type: string
@@ -133,6 +135,12 @@ agents:
               - "(?i)\\brm\\b"
               - "(?i)\\bcurl\\b"
               - "(?i)\\bwget\\b"
+              - "(?i)\\.aws\\b"
+              - "(?i)\\.ssh\\b"
+              - "(?i)\\.kube\\b"
+              - "(?i)/etc/shadow"
+              - "(?i)/proc/.*/environ"
+              - "(?i)credentials"
             max_length: 256
       - name: deploy.production
         args:

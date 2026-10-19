@@ -20,8 +20,25 @@ from asc.models import (
     Trace,
     Verdict,
 )
+from asc.paths import (
+    PathCanonicalizeError,
+    canonicalize_path,
+    extract_path_tokens,
+    is_sensitive_path,
+    is_under_prefix,
+    prefix_from_pattern,
+    resolves_to_parent_or_root,
+)
 from asc.policy import PolicyError, load_policy
 from asc.trace import TraceError, load_trace, parse_trace
+
+# Tools whose path argument is subject to destructive parent/root refusal.
+_DESTRUCTIVE_PATH_TOOLS = frozenset({"filesystem.delete", "filesystem.write"})
+
+# Shell commands that may take a filesystem path argument (deny-by-default).
+_SHELL_PATH_COMMANDS = frozenset({"cat", "ls"})
+_SHELL_ALLOWED_COMMANDS = frozenset({"cat", "ls", "echo"})
+_WORKSPACE_ROOT = "/workspace"
 
 
 def _block(
@@ -73,6 +90,15 @@ def _host_allowed(url: str, allow_hosts: tuple[str, ...]) -> bool:
     return False
 
 
+def _should_canonicalize_arg(name: str, constraint: ArgConstraint) -> bool:
+    """Path-shaped arguments are canonicalized before allowlist checks."""
+    if name == "path":
+        return True
+    if constraint.pattern and constraint.pattern.startswith("^/"):
+        return True
+    return False
+
+
 def _check_arg(
     name: str,
     value: Any,
@@ -95,15 +121,33 @@ def _check_arg(
                 call_id=call.call_id,
                 details={"argument": name, "max_length": constraint.max_length},
             )
-        if constraint.pattern is not None and re.search(constraint.pattern, value) is None:
+
+        check_value = value
+        if _should_canonicalize_arg(name, constraint):
+            try:
+                check_value = canonicalize_path(value)
+            except PathCanonicalizeError as exc:
+                return _block(
+                    f"path canonicalization failed for {call.tool}.{name}: {exc}",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"argument": name, "value": value},
+                )
+
+        if constraint.pattern is not None and re.search(constraint.pattern, check_value) is None:
             return _block(
                 f"argument pattern mismatch for {call.tool}.{name}",
                 scenario_id,
                 call_id=call.call_id,
-                details={"argument": name, "pattern": constraint.pattern},
+                details={
+                    "argument": name,
+                    "pattern": constraint.pattern,
+                    "canonical": check_value if check_value != value else None,
+                },
             )
+        # Deny patterns apply to both raw and canonical forms (defense in depth).
         for deny in constraint.deny_patterns:
-            if re.search(deny, value):
+            if re.search(deny, value) or (check_value != value and re.search(deny, check_value)):
                 return _block(
                     f"denied pattern in {call.tool}.{name}: {deny}",
                     scenario_id,
@@ -125,11 +169,142 @@ def _check_arg(
     return None
 
 
+def _check_sensitive_in_string_args(
+    call: ToolCall,
+    scenario_id: str,
+) -> EvaluationResult | None:
+    """Apply the sensitive-path denylist to every string argument and path token."""
+    for arg_name, raw in call.args.items():
+        if not isinstance(raw, str):
+            continue
+        candidates = [raw, *extract_path_tokens(raw)]
+        for candidate in candidates:
+            if is_sensitive_path(candidate):
+                return _block(
+                    f"sensitive path denied in {call.tool}.{arg_name}",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"argument": arg_name, "value": candidate},
+                )
+    return None
+
+
+def _check_shell_exec(call: ToolCall, scenario_id: str) -> EvaluationResult | None:
+    """Deny-by-default shell.exec: only cat|ls|echo, path args must stay under /workspace."""
+    command = call.args.get("command")
+    if not isinstance(command, str):
+        return _block(
+            "shell.exec missing string command",
+            scenario_id,
+            call_id=call.call_id,
+        )
+    parts = command.split()
+    if not parts:
+        return _block(
+            "shell.exec empty command",
+            scenario_id,
+            call_id=call.call_id,
+        )
+    prog = parts[0]
+    if prog not in _SHELL_ALLOWED_COMMANDS:
+        return _block(
+            f"shell.exec command not allowlisted: {prog}",
+            scenario_id,
+            call_id=call.call_id,
+            details={"command": prog},
+        )
+    if prog in _SHELL_PATH_COMMANDS:
+        if len(parts) < 2:
+            return _block(
+                f"shell.exec {prog} requires a path argument",
+                scenario_id,
+                call_id=call.call_id,
+            )
+        for token in parts[1:]:
+            try:
+                canonical = canonicalize_path(token)
+            except PathCanonicalizeError as exc:
+                return _block(
+                    f"shell.exec path canonicalization failed: {exc}",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"token": token},
+                )
+            if is_sensitive_path(token) or is_sensitive_path(canonical):
+                return _block(
+                    "shell.exec sensitive path denied",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"token": token, "canonical": canonical},
+                )
+            if not is_under_prefix(canonical, _WORKSPACE_ROOT):
+                return _block(
+                    "shell.exec path outside /workspace (deny-by-default)",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"token": token, "canonical": canonical},
+                )
+    return None
+
+
+def _check_destructive_path(
+    call: ToolCall,
+    allow: ToolAllow,
+    scenario_id: str,
+) -> EvaluationResult | None:
+    """BLOCK destructive ops whose path resolves to parent or root, even if approved."""
+    if call.tool not in _DESTRUCTIVE_PATH_TOOLS:
+        return None
+    raw = call.args.get("path")
+    if not isinstance(raw, str):
+        return None
+    try:
+        canonical = canonicalize_path(raw)
+    except PathCanonicalizeError as exc:
+        return _block(
+            f"destructive path canonicalization failed: {exc}",
+            scenario_id,
+            call_id=call.call_id,
+            details={"path": raw},
+        )
+    path_constraint = allow.args.get("path")
+    allowed_prefix = prefix_from_pattern(path_constraint.pattern if path_constraint else None)
+    if allowed_prefix is None:
+        allowed_prefix = _WORKSPACE_ROOT + "/"
+    prefix_root = allowed_prefix.rstrip("/")
+    escapes = resolves_to_parent_or_root(canonical, allowed_prefix) or not (
+        canonical.startswith(prefix_root + "/") and canonical != prefix_root
+    )
+    if escapes:
+        return _block(
+            "destructive path resolves to parent or filesystem root",
+            scenario_id,
+            call_id=call.call_id,
+            details={
+                "path": raw,
+                "canonical": canonical,
+                "allowed_prefix": allowed_prefix,
+                "approved": call.approved,
+            },
+        )
+    return None
+
+
 def _check_call_args(
     call: ToolCall,
     allow: ToolAllow,
     scenario_id: str,
 ) -> EvaluationResult | None:
+    # Schema-strict: reject undeclared arguments (fail closed).
+    undeclared = sorted(set(call.args) - set(allow.args))
+    if undeclared:
+        return _block(
+            f"undeclared arguments for {call.tool}: {', '.join(undeclared)}",
+            scenario_id,
+            call_id=call.call_id,
+            details={"undeclared": undeclared},
+        )
+
     for arg_name, constraint in allow.args.items():
         if arg_name not in call.args:
             return _block(
@@ -141,6 +316,20 @@ def _check_call_args(
         result = _check_arg(arg_name, call.args[arg_name], constraint, call, scenario_id)
         if result is not None:
             return result
+
+    sensitive = _check_sensitive_in_string_args(call, scenario_id)
+    if sensitive is not None:
+        return sensitive
+
+    if call.tool == "shell.exec":
+        shell_result = _check_shell_exec(call, scenario_id)
+        if shell_result is not None:
+            return shell_result
+
+    destructive = _check_destructive_path(call, allow, scenario_id)
+    if destructive is not None:
+        return destructive
+
     return None
 
 
