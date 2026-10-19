@@ -73,7 +73,7 @@ python -m asc corpus \
 ### Reusable GitHub Action
 
 ```yaml
-- uses: justrunme/agent-security-contract@v0.1.0
+- uses: justrunme/agent-security-contract@v0.2.0
   with:
     policy: policy/demo-agent.policy.yaml
     corpus: corpus/scenarios
@@ -97,8 +97,9 @@ YAML policy (`policy/demo-agent.policy.yaml`) declares:
 - **Capability catalog** — tool name, description, input schema
 - **Capability digest** — `sha256:` over the canonical catalog; must match the approved digest
 - **Per-agent allowlists** — which tools an agent may call
-- **Argument constraints** — type, pattern, deny patterns, allowlisted hosts, max length
-- **High-impact tools** — require `approved: true` on the call or the verdict is `REQUIRE_APPROVAL`
+- **Argument constraints** — type, pattern, deny patterns, allowlisted hosts, max length; undeclared args are rejected
+- **Path canonicalization** — path args are percent-decoded, NUL-checked, slash-collapsed, and `..`-resolved before allowlist checks
+- **High-impact tools** — require `approved: true` on the call or the verdict is `REQUIRE_APPROVAL`; destructive paths that resolve to a parent/root still `BLOCK`
 - **Rate limits** — max calls per trace and per tool
 
 ## Evidence envelope
