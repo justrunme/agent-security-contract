@@ -66,6 +66,8 @@ runs:
       env:
         ASC_POLICY: ${{ inputs.policy }}
         ASC_TRACE: ${{ inputs.trace }}
+        # Prefer PR head SHA over the pull_request merge ref (GITHUB_SHA).
+        ASC_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       run: python -m asc check --policy "${ASC_POLICY}" --trace "${ASC_TRACE}" --json
 
     - name: Run ASC corpus
@@ -77,6 +79,8 @@ runs:
         ASC_RESULTS: ${{ inputs.results }}
         ASC_SUMMARY: ${{ inputs.summary }}
         ASC_EVIDENCE: ${{ inputs.evidence }}
+        # Prefer PR head SHA over the pull_request merge ref (GITHUB_SHA).
+        ASC_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       run: |
         set -euo pipefail
         extra=()

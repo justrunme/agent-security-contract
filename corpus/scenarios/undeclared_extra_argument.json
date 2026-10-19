@@ -149,6 +149,32 @@
           "type": "object"
         },
         "name": "secrets.read"
+      },
+      {
+        "description": "Send an email to an allowlisted recipient. Attachments are optional.",
+        "input_schema": {
+          "properties": {
+            "to": {
+              "type": "string"
+            },
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "attachments": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "to",
+            "subject",
+            "body"
+          ],
+          "type": "object"
+        },
+        "name": "email.send"
       }
     ],
     "trace_id": "t-undeclared-arg"

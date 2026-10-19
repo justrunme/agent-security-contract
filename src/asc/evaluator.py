@@ -118,6 +118,21 @@ def _check_arg(
             call_id=call.call_id,
             details={"argument": name, "expected_type": constraint.type},
         )
+    has_string_checks = bool(
+        constraint.pattern is not None
+        or constraint.deny_patterns
+        or constraint.allow_hosts
+        or constraint.max_length is not None
+    )
+    if has_string_checks and not isinstance(value, str):
+        # String constraints cannot be evaluated on a non-string value (e.g. an
+        # explicit null for an ``any``-typed optional argument): fail closed.
+        return _block(
+            f"argument {call.tool}.{name} must be a string to apply its constraints",
+            scenario_id,
+            call_id=call.call_id,
+            details={"argument": name},
+        )
     if isinstance(value, str):
         if constraint.max_length is not None and len(value) > constraint.max_length:
             return _block(
@@ -281,7 +296,14 @@ def _check_destructive_path(
         return None
     raw = call.args.get("path")
     if not isinstance(raw, str):
-        return None
+        # A destructive call without a concrete path would fall back to the
+        # executor's default target; never allow it, even if ``path`` is optional.
+        return _block(
+            f"destructive call {call.tool} without a string path",
+            scenario_id,
+            call_id=call.call_id,
+            details={"approved": call.approved},
+        )
     try:
         canonical = canonicalize_path(raw)
     except PathCanonicalizeError as exc:
@@ -331,12 +353,14 @@ def _check_call_args(
 
     for arg_name, constraint in allow.args.items():
         if arg_name not in call.args:
-            return _block(
-                f"missing required argument {call.tool}.{arg_name}",
-                scenario_id,
-                call_id=call.call_id,
-                details={"argument": arg_name},
-            )
+            if constraint.required:
+                return _block(
+                    f"missing required argument {call.tool}.{arg_name}",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"argument": arg_name},
+                )
+            continue
         result = _check_arg(arg_name, call.args[arg_name], constraint, call, scenario_id)
         if result is not None:
             return result

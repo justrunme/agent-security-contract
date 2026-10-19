@@ -34,6 +34,9 @@ jobs:
         run: python -m pytest -q
 
       - name: Run full corpus and generate evidence
+        env:
+          # Prefer PR head SHA over the pull_request merge ref (GITHUB_SHA).
+          ASC_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python -m asc corpus \
             --policy policy/demo-agent.policy.yaml \
