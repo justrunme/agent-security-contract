@@ -125,6 +125,16 @@ def test_build_envelope_uses_trace_id() -> None:
     assert envelope["commit_sha"] == "abc123"
 
 
+def test_resolve_commit_sha_prefers_asc_over_github(monkeypatch) -> None:
+    from asc.envelope import resolve_commit_sha
+
+    monkeypatch.setenv("GITHUB_SHA", "merge-ref-sha")
+    monkeypatch.setenv("ASC_COMMIT_SHA", "real-head-sha")
+    assert resolve_commit_sha() == "real-head-sha"
+    monkeypatch.delenv("ASC_COMMIT_SHA")
+    assert resolve_commit_sha() == "merge-ref-sha"
+
+
 def test_verify_rejects_consistent_verdict_flip(tmp_path: Path) -> None:
     """BLOCK -> ALLOW with a matching disposition is still caught by envelope_sha256."""
     _, envelope = evaluate_paths_envelope(

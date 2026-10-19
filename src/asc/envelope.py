@@ -71,9 +71,16 @@ def policy_sha256_file(path: str | Path) -> str:
 
 
 def resolve_commit_sha(explicit: str | None = None) -> str:
+    """Resolve the commit recorded in evidence envelopes.
+
+    Prefer ``ASC_COMMIT_SHA`` over ``GITHUB_SHA`` so CI can pin the real PR head
+    (``github.event.pull_request.head.sha``) instead of the ephemeral merge ref
+    that GitHub Actions exposes as ``GITHUB_SHA`` on ``pull_request`` events.
+    On push workflows, both typically equal ``github.sha``.
+    """
     if explicit:
         return explicit
-    for key in ("GITHUB_SHA", "ASC_COMMIT_SHA", "GIT_COMMIT"):
+    for key in ("ASC_COMMIT_SHA", "GITHUB_SHA", "GIT_COMMIT"):
         value = os.environ.get(key)
         if value:
             return value

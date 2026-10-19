@@ -1,5 +1,5 @@
 version: "1"
-capability_digest: "sha256:7a3f16063ce5d78b381b20adf4d46a6f2b0a79269e79d4e15adfba4894bfae01"
+capability_digest: "sha256:1f656773b7b8b0b4db1afd42ee9d93eddbac614342dd76fb39adcd3665ac8de9"
 
 capabilities:
   - name: filesystem.read
@@ -70,6 +70,20 @@ capabilities:
         name:
           type: string
       required: [name]
+  - name: email.send
+    description: "Send an email to an allowlisted recipient. Attachments are optional."
+    input_schema:
+      type: object
+      properties:
+        to:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        attachments:
+          type: string
+      required: [to, subject, body]
 
 agents:
   demo-agent:
@@ -152,6 +166,25 @@ agents:
             type: string
             pattern: "^v?[0-9]+\\.[0-9]+\\.[0-9]+$"
             max_length: 32
+      - name: email.send
+        args:
+          to:
+            type: string
+            pattern: "^[^@\\s]+@example\\.com$"
+            max_length: 256
+          subject:
+            type: string
+            max_length: 200
+          body:
+            type: string
+            max_length: 10000
+          attachments:
+            type: string
+            required: false
+            pattern: "^/workspace/out/"
+            deny_patterns:
+              - "\\.\\./"
+            max_length: 512
       # secrets.read is intentionally absent from the allowlist (privilege boundary)
     high_impact_tools:
       - filesystem.delete

@@ -197,6 +197,116 @@ def test_undeclared_arguments_blocked() -> None:
     assert "undeclared" in result.reason.lower()
 
 
+def test_optional_argument_omitted_allows() -> None:
+    policy = load_policy("policy/demo-agent.policy.yaml")
+    result = evaluate_trace_data(
+        policy,
+        _trace(
+            [
+                {
+                    "call_id": "c1",
+                    "tool": "email.send",
+                    "args": {
+                        "to": "ops@example.com",
+                        "subject": "Status",
+                        "body": "All green.",
+                    },
+                }
+            ]
+        ),
+        scenario_id="opt-omit",
+    )
+    assert result.verdict == Verdict.ALLOW
+
+
+def test_optional_argument_present_and_valid_allows() -> None:
+    policy = load_policy("policy/demo-agent.policy.yaml")
+    result = evaluate_trace_data(
+        policy,
+        _trace(
+            [
+                {
+                    "call_id": "c1",
+                    "tool": "email.send",
+                    "args": {
+                        "to": "ops@example.com",
+                        "subject": "Report",
+                        "body": "See attached.",
+                        "attachments": "/workspace/out/report.txt",
+                    },
+                }
+            ]
+        ),
+        scenario_id="opt-ok",
+    )
+    assert result.verdict == Verdict.ALLOW
+
+
+def test_optional_argument_present_but_invalid_blocked() -> None:
+    policy = load_policy("policy/demo-agent.policy.yaml")
+    result = evaluate_trace_data(
+        policy,
+        _trace(
+            [
+                {
+                    "call_id": "c1",
+                    "tool": "email.send",
+                    "args": {
+                        "to": "ops@example.com",
+                        "subject": "Hi",
+                        "body": "Body",
+                        "attachments": "/etc/passwd",
+                    },
+                }
+            ]
+        ),
+        scenario_id="opt-bad",
+    )
+    assert result.verdict == Verdict.BLOCK
+
+
+def test_missing_required_argument_blocked() -> None:
+    policy = load_policy("policy/demo-agent.policy.yaml")
+    result = evaluate_trace_data(
+        policy,
+        _trace(
+            [
+                {
+                    "call_id": "c1",
+                    "tool": "email.send",
+                    "args": {"subject": "Hi", "body": "Body"},
+                }
+            ]
+        ),
+        scenario_id="missing-req",
+    )
+    assert result.verdict == Verdict.BLOCK
+    assert "missing required" in result.reason.lower()
+
+
+def test_wrong_argument_type_blocked() -> None:
+    policy = load_policy("policy/demo-agent.policy.yaml")
+    result = evaluate_trace_data(
+        policy,
+        _trace(
+            [
+                {
+                    "call_id": "c1",
+                    "tool": "email.send",
+                    "args": {
+                        "to": ["ops@example.com"],
+                        "subject": "Hi",
+                        "body": "Body",
+                    },
+                }
+            ]
+        ),
+        scenario_id="wrong-type",
+    )
+    assert result.verdict == Verdict.BLOCK
+    assert "type" in result.reason.lower()
+
+
 
 def _shell_verdict(command: str) -> Verdict:
     policy = load_policy("policy/demo-agent.policy.yaml")

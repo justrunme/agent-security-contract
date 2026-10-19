@@ -97,7 +97,7 @@ YAML policy (`policy/demo-agent.policy.yaml`) declares:
 - **Capability catalog** — tool name, description, input schema
 - **Capability digest** — `sha256:` over the canonical catalog; must match the approved digest
 - **Per-agent allowlists** — which tools an agent may call
-- **Argument constraints** — type, pattern, deny patterns, allowlisted hosts, max length; undeclared args are rejected
+- **Argument constraints** — type, pattern, deny patterns, allowlisted hosts, max length, and per-arg `required` (default `true`); undeclared args are rejected; omitted optional args are allowed
 - **Path canonicalization** — path args are percent-decoded, NUL-checked, slash-collapsed, and `..`-resolved before allowlist checks
 - **High-impact tools** — require `approved: true` on the call or the verdict is `REQUIRE_APPROVAL`; destructive paths that resolve to a parent/root still `BLOCK`
 - **Rate limits** — max calls per trace and per tool
@@ -114,7 +114,7 @@ Every verdict emits JSON conforming to [`schemas/evidence-envelope.schema.json`]
 | `scenario_id` | Corpus / caller scenario id |
 | `verdict` / `reason` | Decision |
 | `trace_id` | Trace identifier |
-| `commit_sha` | `GITHUB_SHA` / `ASC_COMMIT_SHA` / `unknown` |
+| `commit_sha` | `ASC_COMMIT_SHA` / `GITHUB_SHA` / `unknown` (CI sets `ASC_COMMIT_SHA` to the PR head or push SHA) |
 | `timestamp` | UTC ISO-8601 |
 | `envelope_sha256` | SHA-256 over the canonical JSON of all other fields |
 

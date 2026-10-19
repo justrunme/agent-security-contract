@@ -11,7 +11,7 @@ from asc.evidence import render_evidence
 def test_corpus_has_expected_size() -> None:
     scenarios = list(Path("corpus/scenarios").glob("*.json"))
     assert len(scenarios) >= 15
-    assert len(scenarios) == 58
+    assert len(scenarios) == 66
 
 
 def test_allow_scenarios_at_least_attack_scenarios() -> None:
@@ -24,8 +24,8 @@ def test_allow_scenarios_at_least_attack_scenarios() -> None:
     allow = sum(1 for s in scenarios if s["expected"] == "ALLOW")
     attack = sum(1 for s in scenarios if s["expected"] != "ALLOW")
     assert allow >= attack
-    assert allow == 29
-    assert attack == 29
+    assert allow == 33
+    assert attack == 33
 
 
 def test_corpus_covers_required_themes() -> None:
@@ -56,6 +56,13 @@ def test_corpus_covers_required_themes() -> None:
         "approved_delete_parent_escape",
         "undeclared_extra_argument",
         "shell_exec_shadow_mixed_case",
+        # Optional-argument regressions (v0.2.1)
+        "benign_email_send_no_attachments",
+        "benign_email_send_with_attachments",
+        "email_send_missing_required",
+        "email_send_undeclared_argument",
+        "email_send_optional_invalid",
+        "email_send_wrong_type",
     }
     assert required.issubset(ids)
 

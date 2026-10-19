@@ -331,12 +331,14 @@ def _check_call_args(
 
     for arg_name, constraint in allow.args.items():
         if arg_name not in call.args:
-            return _block(
-                f"missing required argument {call.tool}.{arg_name}",
-                scenario_id,
-                call_id=call.call_id,
-                details={"argument": arg_name},
-            )
+            if constraint.required:
+                return _block(
+                    f"missing required argument {call.tool}.{arg_name}",
+                    scenario_id,
+                    call_id=call.call_id,
+                    details={"argument": arg_name},
+                )
+            continue
         result = _check_arg(arg_name, call.args[arg_name], constraint, call, scenario_id)
         if result is not None:
             return result
