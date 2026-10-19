@@ -13,7 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   optional argument PASSes while a present optional argument is still fully
   validated (type, pattern, hosts, length). Undeclared arguments still BLOCK.
   `required` defaults to `true` for backward compatibility with v0.2.0 policies.
-- Policy load rejects a malformed per-argument `required` (must be a boolean).
+- Policy load rejects a malformed per-argument `required` (must be a boolean)
+  and any unknown argument-constraint key (e.g. a `deny_pattern` typo or an
+  unsupported `default`), so a constraint can never be dropped silently.
+- An argument that carries string constraints (`pattern`, `deny_patterns`,
+  `allow_hosts`, `max_length`) now BLOCKs when its value is not a string, even
+  if it is typed `any` (e.g. an explicit `null` for an optional argument).
+- Destructive filesystem calls without a string `path` BLOCK even when the
+  policy marks `path` optional and the call is approved.
 - Evidence envelopes record the real head commit: prefer `ASC_COMMIT_SHA` over
   `GITHUB_SHA`, and CI/action set `ASC_COMMIT_SHA` from
   `github.event.pull_request.head.sha` (or `github.sha` on push) so PR runs no

@@ -14,7 +14,7 @@ All claims below are **on this corpus of 66 scenarios** only. They do not imply 
 - Attack scenarios (expected BLOCK/REQUIRE_APPROVAL): `33`
 - Legitimate ALLOW scenarios: `33`
 - Scenario count: `66`
-- Suite time (ms): `24`
+- Suite time (ms): `23`
 - Corpus passed: `True`
 
 ## Per-scenario verdict table

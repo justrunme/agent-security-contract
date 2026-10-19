@@ -366,3 +366,53 @@ def test_directory_argument_with_trailing_slash() -> None:
     assert verdict("filesystem.list", "/workspace/out/") == Verdict.ALLOW
     assert verdict("filesystem.delete", "/workspace/out/", approved=True) == Verdict.BLOCK
     assert verdict("filesystem.list", "/workspace/out/../../") == Verdict.BLOCK
+
+
+def _policy_with(mutate) -> object:
+    import copy
+
+    import yaml
+
+    from asc.policy import parse_policy
+
+    raw = yaml.safe_load(open("policy/demo-agent.policy.yaml", encoding="utf-8"))
+    raw = copy.deepcopy(raw)
+    mutate(raw["agents"]["demo-agent"]["allowed_tools"])
+    return parse_policy(raw)
+
+
+def _tool(tools, name):
+    return next(t for t in tools if t["name"] == name)
+
+
+def test_optional_destructive_path_omitted_still_blocked() -> None:
+    def mutate(tools):
+        _tool(tools, "filesystem.delete")["args"]["path"]["required"] = False
+
+    policy = _policy_with(mutate)
+    call = {"call_id": "c1", "tool": "filesystem.delete", "args": {}, "approved": True}
+    result = evaluate_trace_data(policy, _trace([call]), scenario_id="opt-del")
+    assert result.verdict == Verdict.BLOCK
+
+
+@pytest.mark.parametrize("value", [None, 0, ["/etc/passwd"], {"p": "/etc/passwd"}])
+def test_any_typed_optional_with_string_constraints_rejects_non_strings(value) -> None:
+    def mutate(tools):
+        _tool(tools, "email.send")["args"]["attachments"]["type"] = "any"
+
+    policy = _policy_with(mutate)
+    args = {"to": "a@example.com", "subject": "s", "body": "b", "attachments": value}
+    call = {"call_id": "c1", "tool": "email.send", "args": args}
+    result = evaluate_trace_data(policy, _trace([call]), scenario_id="opt-any")
+    assert result.verdict == Verdict.BLOCK
+
+
+@pytest.mark.parametrize("key", ["default", "deny_pattern", "requried"])
+def test_unknown_constraint_keys_rejected(key) -> None:
+    from asc.policy import PolicyError
+
+    def mutate(tools):
+        _tool(tools, "email.send")["args"]["attachments"][key] = "x"
+
+    with pytest.raises(PolicyError):
+        _policy_with(mutate)
