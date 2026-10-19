@@ -20,6 +20,8 @@ class ArgConstraint:
     deny_patterns: tuple[str, ...] = ()
     allow_hosts: tuple[str, ...] = ()
     max_length: int | None = None
+    # Default True preserves v0.2.0 behavior: every declared arg was required.
+    required: bool = True
 
 
 @dataclass(frozen=True)

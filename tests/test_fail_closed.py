@@ -67,6 +67,17 @@ def test_policy_digest_mismatch_rejected() -> None:
         parse_policy(raw)
 
 
+@pytest.mark.parametrize("bad_required", ["true", 1, 0, "false", None, ["yes"]])
+def test_malformed_required_rejected(bad_required) -> None:
+    raw = yaml.safe_load(Path("policy/demo-agent.policy.yaml").read_text(encoding="utf-8"))
+    email = next(
+        t for t in raw["agents"]["demo-agent"]["allowed_tools"] if t["name"] == "email.send"
+    )
+    email["args"]["attachments"]["required"] = bad_required
+    with pytest.raises(PolicyError, match=r"required must be a boolean"):
+        parse_policy(raw)
+
+
 def test_empty_policy_blocks(tmp_path: Path) -> None:
     policy = tmp_path / "empty.yaml"
     policy.write_text("", encoding="utf-8")

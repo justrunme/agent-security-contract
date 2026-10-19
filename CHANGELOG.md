@@ -5,6 +5,40 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-10-19
+
+### Fixed
+
+- Optional tool arguments: declared args may set `required: false` so an omitted
+  optional argument PASSes while a present optional argument is still fully
+  validated (type, pattern, hosts, length). Undeclared arguments still BLOCK.
+  `required` defaults to `true` for backward compatibility with v0.2.0 policies.
+- Policy load rejects a malformed per-argument `required` (must be a boolean)
+  and any unknown argument-constraint key (e.g. a `deny_pattern` typo or an
+  unsupported `default`), so a constraint can never be dropped silently.
+- An argument that carries string constraints (`pattern`, `deny_patterns`,
+  `allow_hosts`, `max_length`) now BLOCKs when its value is not a string, even
+  if it is typed `any` (e.g. an explicit `null` for an optional argument).
+- Destructive filesystem calls without a string `path` BLOCK even when the
+  policy marks `path` optional and the call is approved.
+- Evidence envelopes record the real head commit: prefer `ASC_COMMIT_SHA` over
+  `GITHUB_SHA`, and CI/action set `ASC_COMMIT_SHA` from
+  `github.event.pull_request.head.sha` (or `github.sha` on push) so PR runs no
+  longer stamp the ephemeral merge ref.
+
+### Added
+
+- Demo `email.send` capability with optional `attachments`.
+- Corpus scenarios for optional-arg PASS/BLOCK paths (omit, valid present,
+  missing required, undeclared, invalid optional, wrong type).
+- Unit tests covering optional omit, invalid optional, missing required,
+  undeclared args, wrong types, and malformed `required` in policy YAML.
+
+### Changed
+
+- Package version bumped to `0.2.1`.
+- Evidence regenerated from a full corpus run (claims remain scoped **on this corpus**).
+
 ## [0.2.0] — 2026-10-19
 
 ### Security

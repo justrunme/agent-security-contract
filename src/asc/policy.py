@@ -21,8 +21,18 @@ def _require_mapping(value: Any, label: str) -> dict[str, Any]:
     return value
 
 
+_ARG_CONSTRAINT_KEYS = frozenset(
+    {"type", "pattern", "deny_patterns", "allow_hosts", "max_length", "required"}
+)
+
+
 def _parse_arg_constraint(raw: Any, label: str) -> ArgConstraint:
     data = _require_mapping(raw, label)
+    # Fail closed on unknown keys: a typo such as ``deny_pattern`` or an
+    # unsupported ``default`` must not silently drop a constraint.
+    unknown = sorted(set(data) - _ARG_CONSTRAINT_KEYS)
+    if unknown:
+        raise PolicyError(f"{label} has unknown keys: {', '.join(unknown)}")
     type_name = data.get("type", "any")
     if not isinstance(type_name, str):
         raise PolicyError(f"{label}.type must be a string")
@@ -38,12 +48,20 @@ def _parse_arg_constraint(raw: Any, label: str) -> ArgConstraint:
     max_length = data.get("max_length")
     if max_length is not None and not isinstance(max_length, int):
         raise PolicyError(f"{label}.max_length must be an integer")
+    # Default True: omitted means required (backward compatible with v0.2.0).
+    if "required" in data:
+        required = data["required"]
+        if not isinstance(required, bool):
+            raise PolicyError(f"{label}.required must be a boolean")
+    else:
+        required = True
     return ArgConstraint(
         type=type_name,
         pattern=pattern,
         deny_patterns=tuple(deny),
         allow_hosts=tuple(hosts),
         max_length=max_length,
+        required=required,
     )
 
 

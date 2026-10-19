@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-security-contract"
-version = "0.2.0"
+version = "0.2.1"
 description = "Fail-closed security contract for AI agents and MCP tool calls"
 readme = "README.md"
 license = { text = "Apache-2.0" }
