@@ -38,12 +38,20 @@ def _parse_arg_constraint(raw: Any, label: str) -> ArgConstraint:
     max_length = data.get("max_length")
     if max_length is not None and not isinstance(max_length, int):
         raise PolicyError(f"{label}.max_length must be an integer")
+    # Default True: omitted means required (backward compatible with v0.2.0).
+    if "required" in data:
+        required = data["required"]
+        if not isinstance(required, bool):
+            raise PolicyError(f"{label}.required must be a boolean")
+    else:
+        required = True
     return ArgConstraint(
         type=type_name,
         pattern=pattern,
         deny_patterns=tuple(deny),
         allow_hosts=tuple(hosts),
         max_length=max_length,
+        required=required,
     )
 
 

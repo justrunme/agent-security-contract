@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-10-19
+
+### Fixed
+
+- Optional tool arguments: declared args may set `required: false` so an omitted
+  optional argument PASSes while a present optional argument is still fully
+  validated (type, pattern, hosts, length). Undeclared arguments still BLOCK.
+  `required` defaults to `true` for backward compatibility with v0.2.0 policies.
+- Policy load rejects a malformed per-argument `required` (must be a boolean).
+- Evidence envelopes record the real head commit: prefer `ASC_COMMIT_SHA` over
+  `GITHUB_SHA`, and CI/action set `ASC_COMMIT_SHA` from
+  `github.event.pull_request.head.sha` (or `github.sha` on push) so PR runs no
+  longer stamp the ephemeral merge ref.
+
+### Added
+
+- Demo `email.send` capability with optional `attachments`.
+- Corpus scenarios for optional-arg PASS/BLOCK paths (omit, valid present,
+  missing required, undeclared, invalid optional, wrong type).
+- Unit tests covering optional omit, invalid optional, missing required,
+  undeclared args, wrong types, and malformed `required` in policy YAML.
+
+### Changed
+
+- Package version bumped to `0.2.1`.
+- Evidence regenerated from a full corpus run (claims remain scoped **on this corpus**).
+
 ## [0.2.0] — 2026-10-19
 
 ### Security
