@@ -125,3 +125,13 @@ def test_cli_corpus(tmp_path: Path) -> None:
     assert report["metrics"]["critical_false_allow"] == 0
     assert evidence.is_file()
     assert summary.is_file()
+
+
+def test_main_module_import_has_no_cli_side_effects() -> None:
+    """Collectors may import asc.__main__; that must not call the CLI."""
+    import importlib
+    import sys
+
+    sys.modules.pop("asc.__main__", None)
+    mod = importlib.import_module("asc.__main__")
+    assert callable(mod.main)
