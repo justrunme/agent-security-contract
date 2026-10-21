@@ -150,10 +150,11 @@ Possible OWASP upstream contributions: [`docs/UPSTREAM.md`](docs/UPSTREAM.md).
 ```bash
 python -m pip install -e ".[dev]"
 python -m ruff check src tests
+python -m pytest --collect-only -q
 python -m pytest -q
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, unit tests (including fail-closed and envelope negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, and regenerates `docs/EVIDENCE.md`. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
+CI (`.github/workflows/ci.yml`) runs a clean-install `pytest --collect-only` gate, lint, unit tests (including fail-closed and envelope negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, and regenerates `docs/EVIDENCE.md`. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
 
 ## Security
 
