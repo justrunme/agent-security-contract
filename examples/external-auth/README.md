@@ -50,7 +50,7 @@ Claims are scoped **on this corpus** only (see `docs/EVIDENCE-EXTERNAL-AUTH.md`)
 | Unapproved production deploy | `REQUIRE_APPROVAL` (MCP does not execute) |
 | Malformed body | `BLOCK` (fail closed) |
 | Missing credentials | `BLOCK` (fail closed) |
-| Authorizer scaled to zero | `BLOCK` (Envoy fail closed) |
+| Authorizer adapter process stopped (nothing listening on :9191) | `BLOCK` (Envoy fail closed) |
 | Authorizer hangs past Envoy timeout | `BLOCK` (Envoy fail closed) |
 
 ## Manual probe
@@ -85,6 +85,6 @@ kind delete cluster --name asc-external-auth
 - Lexical path checks and policy semantics are unchanged from ASC; this quickstart only proves **admission** via ext_authz.
 - The MCP process is a demo stand-in (records admitted calls); it is not a full MCP SDK server.
 - Evidence envelopes for `ALLOW` appear on the ASC sidecar path; the client-visible 200 is the MCP demo response after admission.
-- Authorizer-timeout is induced with a test-only `ASC_FORCE_SLEEP_S` on the adapter so Envoy's 0.5s ext_authz timeout fires; production should omit that knob.
-- Authorizer-down stops the in-pod adapter process, then restarts the gateway Deployment.
+- Authorizer-timeout is induced with a test-only `ASC_FORCE_SLEEP_S_TEST` on the adapter so Envoy's 0.5s ext_authz timeout fires; production should omit that knob.
+- Authorizer-down stops the adapter process (nothing listening on :9191), then restarts the gateway Deployment.
 - Components share a pod on localhost so the quickstart remains reproducible on hosts where kube-proxy/nftables cannot install ClusterIP rules.

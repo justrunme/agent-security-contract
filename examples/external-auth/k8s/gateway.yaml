@@ -159,7 +159,7 @@ spec:
               value: "0.5"
             - name: ASC_DEMO_BEARER
               value: asc-demo
-            - name: ASC_FORCE_SLEEP_S
+            - name: ASC_FORCE_SLEEP_S_TEST
               value: "0"
           ports:
             - containerPort: 9191

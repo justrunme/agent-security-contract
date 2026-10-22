@@ -14,7 +14,7 @@ All claims below are **on this corpus of 12 scenarios** only. They do not imply 
 - Attack scenarios (expected BLOCK/REQUIRE_APPROVAL): `6`
 - Legitimate ALLOW scenarios: `6`
 - Scenario count: `12`
-- Suite time (ms): `19510`
+- Suite time (ms): `17327`
 - Corpus passed: `True`
 
 ## Per-scenario verdict table
@@ -39,5 +39,5 @@ All claims below are **on this corpus of 12 scenarios** only. They do not imply 
 - Critical false-ALLOW means a high/critical abuse case received ALLOW.
 - Benign false-BLOCK is reported next to false-ALLOW; both are first-class.
 - ALLOW scenario count must be >= attack scenario count on this corpus.
-- Each scenario row in `results/results.json` includes a full evidence envelope.
+- ASC envelopes are recorded for BLOCK/REQUIRE_APPROVAL rows decided by ASC or the adapter.
 - Suite time is wall-clock for the corpus evaluation in the producing process.

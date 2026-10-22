@@ -3,7 +3,7 @@
 Scope: on this corpus of 12 scenarios
 Passed: `True`
 Critical false-ALLOW: `0`
-Suite time (ms): `19510`
+Suite time (ms): `17327`
 
 | Scenario | Expected | Actual | HTTP | Executed | Match |
 |---|---|---|---:|---|---|

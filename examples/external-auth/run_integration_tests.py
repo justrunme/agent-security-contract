@@ -226,7 +226,7 @@ def run_scenario(base: str, scenario: dict[str, Any]) -> dict[str, Any]:
             "deploy/asc-gateway",
             "-c",
             "asc-ext-authz",
-            "ASC_FORCE_SLEEP_S=3",
+            "ASC_FORCE_SLEEP_S_TEST=3",
         )
         _wait_ready()
         _rebind_port_forward()
@@ -241,7 +241,7 @@ def run_scenario(base: str, scenario: dict[str, Any]) -> dict[str, Any]:
                 "deploy/asc-gateway",
                 "-c",
                 "asc-ext-authz",
-                "ASC_FORCE_SLEEP_S=0",
+                "ASC_FORCE_SLEEP_S_TEST=0",
             )
             _wait_ready()
             _rebind_port_forward()
@@ -260,6 +260,17 @@ def run_scenario(base: str, scenario: dict[str, Any]) -> dict[str, Any]:
     reason = ""
     if isinstance(body, dict):
         reason = str(body.get("reason") or body.get("note") or "")
+
+    # Envoy failure_mode_allow=false / status_on_error=Forbidden when the
+    # authorizer is down or times out: client sees 403 without an ASC envelope.
+    deny_source = None
+    if mode in {"authorizer_down", "authorizer_timeout"}:
+        deny_source = "envoy_ext_authz_failure_path"
+        reason = (
+            f"envoy ext_authz failure path ({mode.replace('authorizer_', '')}); "
+            f"HTTP {status} (no ASC envelope)"
+        )
+
     return {
         "scenario_id": scenario_id,
         "title": scenario.get("title", scenario_id),
@@ -274,6 +285,7 @@ def run_scenario(base: str, scenario: dict[str, Any]) -> dict[str, Any]:
         "source": f"{scenario_id}.json",
         "http_status": status,
         "executed": executed,
+        "deny_source": deny_source,
         "envelope": body if isinstance(body, dict) and "schema_version" in body else None,
     }
 
@@ -304,10 +316,22 @@ def build_report(rows: list[dict[str, Any]], suite_time_ms: int) -> dict[str, An
                 benign_false_block += 1
     benign_rate = (benign_false_block / benign_total) if benign_total else 0.0
     n = len(rows)
+    commit_sha = (
+        os.environ.get("ASC_COMMIT_SHA")
+        or os.environ.get("GITHUB_SHA")
+        or "unknown"
+    )
     return {
         "passed": all_match and critical_false_allow == 0 and allow_expected_total >= attack_total,
         "policy": "policy/demo-agent.policy.yaml",
         "corpus": "examples/external-auth/scenarios",
+        "commit_sha": commit_sha,
+        "results_ref": "results/external-auth-results.json",
+        "evidence_generator": "the external-auth integration runner",
+        "envelope_note": (
+            "ASC envelopes are recorded for BLOCK/REQUIRE_APPROVAL rows decided "
+            "by ASC or the adapter."
+        ),
         "suite_time_ms": suite_time_ms,
         "metrics": {
             "critical_false_allow": critical_false_allow,
@@ -368,15 +392,6 @@ def main(argv: list[str] | None = None) -> int:
     results_path.parent.mkdir(parents=True, exist_ok=True)
     results_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     write_evidence(report, Path(args.evidence))
-    evidence_path = Path(args.evidence)
-    evidence_path.write_text(
-        evidence_path.read_text(encoding="utf-8").replace(
-            "This file is **generated** from `results/results.json` by `asc corpus`.",
-            "This file is **generated** from `results/external-auth-results.json` "
-            "by the external-auth integration runner.",
-        ),
-        encoding="utf-8",
-    )
 
     summary_lines = [
         "# External-auth integration summary",

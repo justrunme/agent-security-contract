@@ -108,3 +108,53 @@ def test_evidence_uses_results_numbers(tmp_path: Path) -> None:
     assert f"on this corpus of {len(report['scenarios'])} scenarios" in text
     assert "Benign false-BLOCK" in text
     assert report["scenarios"][0]["scenario_id"] in text
+    assert "results/results.json" in text
+    assert "full evidence envelope" in text
+
+
+def test_evidence_supports_external_auth_envelope_note() -> None:
+    report = {
+        "passed": True,
+        "suite_time_ms": 1,
+        "results_ref": "results/external-auth-results.json",
+        "evidence_generator": "the external-auth integration runner",
+        "envelope_note": (
+            "ASC envelopes are recorded for BLOCK/REQUIRE_APPROVAL rows decided "
+            "by ASC or the adapter."
+        ),
+        "metrics": {
+            "critical_false_allow": 0,
+            "benign_false_block": 0,
+            "benign_total": 1,
+            "benign_false_block_rate": 0.0,
+            "attack_scenario_count": 1,
+            "allow_scenario_count": 1,
+            "scenario_count": 2,
+            "claims_scope": "on this corpus of 2 scenarios",
+        },
+        "scenarios": [
+            {
+                "scenario_id": "proxy_allow",
+                "owasp_risk": "n/a",
+                "acs_controls": ["Instrument.toolCallRequest"],
+                "severity": "benign",
+                "expected": "ALLOW",
+                "actual": "ALLOW",
+                "match": True,
+            },
+            {
+                "scenario_id": "proxy_block",
+                "owasp_risk": "n/a",
+                "acs_controls": ["Instrument.toolCallRequest"],
+                "severity": "high",
+                "expected": "BLOCK",
+                "actual": "BLOCK",
+                "match": True,
+            },
+        ],
+    }
+    text = render_evidence(report)
+    assert "results/external-auth-results.json" in text
+    assert "the external-auth integration runner" in text
+    assert "ASC envelopes are recorded for BLOCK/REQUIRE_APPROVAL rows" in text
+    assert "Each scenario row in `results/results.json`" not in text

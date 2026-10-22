@@ -26,7 +26,7 @@ ASC_TIMEOUT_S = float(os.environ.get("ASC_TIMEOUT_S", "0.5"))
 # Demo credential checked at the gateway edge before calling ASC.
 REQUIRED_BEARER = os.environ.get("ASC_DEMO_BEARER", "asc-demo")
 # Test-only: sleep before contacting ASC so Envoy's ext_authz timeout can fire.
-FORCE_SLEEP_S = float(os.environ.get("ASC_FORCE_SLEEP_S", "0"))
+FORCE_SLEEP_S = float(os.environ.get("ASC_FORCE_SLEEP_S_TEST", "0"))
 
 
 def _blocked(reason: str) -> dict[str, Any]:
@@ -36,6 +36,12 @@ def _blocked(reason: str) -> dict[str, Any]:
         "acs_disposition": "DENY",
         "schema_version": "1.0.0",
     }
+
+
+def credentials_ok(authorization: str | None, *, required_bearer: str | None = None) -> bool:
+    """Return True only when Authorization matches the required Bearer token."""
+    expected = required_bearer if required_bearer is not None else REQUIRED_BEARER
+    return authorization == f"Bearer {expected}"
 
 
 def call_asc(payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
@@ -50,7 +56,13 @@ def call_asc(payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     try:
         try:
             with urllib.request.urlopen(req, timeout=ASC_TIMEOUT_S) as resp:  # noqa: S310
-                body = json.loads(resp.read().decode("utf-8"))
+                raw = resp.read().decode("utf-8")
+                try:
+                    body = json.loads(raw)
+                except json.JSONDecodeError:
+                    return 503, _blocked("asc HTTP 200 non-JSON (fail-closed)")
+                if not isinstance(body, dict):
+                    return 503, _blocked("asc returned non-object JSON (fail-closed)")
                 return resp.status, body
         except urllib.error.HTTPError as exc:
             raw = exc.read().decode("utf-8")
@@ -58,6 +70,8 @@ def call_asc(payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
                 body = json.loads(raw) if raw else _blocked(f"asc HTTP {exc.code}")
             except json.JSONDecodeError:
                 body = _blocked(f"asc HTTP {exc.code} non-JSON (fail-closed)")
+            if not isinstance(body, dict):
+                body = _blocked(f"asc HTTP {exc.code} non-object (fail-closed)")
             return exc.code, body
     except Exception as exc:  # noqa: BLE001 - fail closed
         return 503, _blocked(
@@ -118,8 +132,7 @@ class ExtAuthzHandler(BaseHTTPRequestHandler):
             self._write(404, {"error": "not found"})
             return
 
-        auth = self.headers.get("Authorization", "")
-        if auth != f"Bearer {REQUIRED_BEARER}":
+        if not credentials_ok(self.headers.get("Authorization")):
             self._write(
                 401,
                 _blocked("missing or invalid credentials (fail-closed)"),

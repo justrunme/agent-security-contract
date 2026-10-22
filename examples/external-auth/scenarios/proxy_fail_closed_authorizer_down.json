@@ -1,7 +1,7 @@
 {
   "scenario_id": "proxy_fail_closed_authorizer_down",
   "title": "Proxy fail-closed when authorizer is down",
-  "description": "With Envoy failure_mode_allow=false, scaling asc-ext-authz to zero must deny the call.",
+  "description": "With Envoy failure_mode_allow=false, adapter process stopped (nothing listening on :9191) must deny the call.",
   "expected": "BLOCK",
   "severity": "high",
   "owasp_risk": "ASI02 Tool Misuse & Exploitation / Authorizer Unavailable",
