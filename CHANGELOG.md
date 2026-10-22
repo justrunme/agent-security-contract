@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- External-auth quickstart (`examples/external-auth`): kind cluster with Envoy
+  `ext_authz` calling the real ASC `/v1/evaluate` sidecar in front of an MCP
+  demo server; integration corpus (allow / block / require-approval plus
+  fail-closed authorizer-down, timeout, malformed, no-credentials); CI job;
+  evidence in `docs/EVIDENCE-EXTERNAL-AUTH.md` scoped **on this corpus**.
+
 ## [0.2.1] — 2026-10-19
 
 ### Fixed
