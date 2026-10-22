@@ -151,6 +151,26 @@ def _verdict_from_response(
     return "BLOCK"
 
 
+def classify_envoy_ext_authz_failure(
+    *,
+    status: int,
+    body: dict[str, Any] | None,
+    headers: dict[str, str] | None,
+) -> str | None:
+    """Return deny_source when the client saw Envoy's fail-closed ext_authz path.
+
+    Observed as HTTP 403 with no ``x-asc-verdict`` header and no ASC envelope body
+    (authorizer down / timed out; ``failure_mode_allow=false`` /
+    ``status_on_error=Forbidden``).
+    """
+    hdrs = {str(k).lower(): v for k, v in (headers or {}).items()}
+    has_verdict_header = bool(hdrs.get("x-asc-verdict"))
+    has_envelope = isinstance(body, dict) and isinstance(body.get("schema_version"), str)
+    if status == 403 and not has_verdict_header and not has_envelope:
+        return "envoy_ext_authz_failure_path"
+    return None
+
+
 def _corpus_payload(name: str, scenario_id: str) -> dict[str, Any]:
     scenario = _load_json(ROOT / "corpus" / "scenarios" / f"{name}.json")
     return {"scenario_id": scenario_id, "trace": scenario["trace"]}
@@ -261,15 +281,9 @@ def run_scenario(base: str, scenario: dict[str, Any]) -> dict[str, Any]:
     if isinstance(body, dict):
         reason = str(body.get("reason") or body.get("note") or "")
 
-    # Envoy failure_mode_allow=false / status_on_error=Forbidden when the
-    # authorizer is down or times out: client sees 403 without an ASC envelope.
-    deny_source = None
-    if mode in {"authorizer_down", "authorizer_timeout"}:
-        deny_source = "envoy_ext_authz_failure_path"
-        reason = (
-            f"envoy ext_authz failure path ({mode.replace('authorizer_', '')}); "
-            f"HTTP {status} (no ASC envelope)"
-        )
+    deny_source = classify_envoy_ext_authz_failure(status=status, body=body, headers=hdrs)
+    if deny_source is not None:
+        reason = f"envoy ext_authz failure path; HTTP {status} (no ASC envelope)"
 
     return {
         "scenario_id": scenario_id,
@@ -316,11 +330,9 @@ def build_report(rows: list[dict[str, Any]], suite_time_ms: int) -> dict[str, An
                 benign_false_block += 1
     benign_rate = (benign_false_block / benign_total) if benign_total else 0.0
     n = len(rows)
-    commit_sha = (
-        os.environ.get("ASC_COMMIT_SHA")
-        or os.environ.get("GITHUB_SHA")
-        or "unknown"
-    )
+    # Committed repo artifacts leave this as "unknown". CI sets ASC_COMMIT_SHA
+    # so workflow artifacts record the real push/PR head SHA.
+    commit_sha = os.environ.get("ASC_COMMIT_SHA") or "unknown"
     return {
         "passed": all_match and critical_false_allow == 0 and allow_expected_total >= attack_total,
         "policy": "policy/demo-agent.policy.yaml",

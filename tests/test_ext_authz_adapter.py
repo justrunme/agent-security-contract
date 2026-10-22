@@ -225,3 +225,97 @@ def test_handler_missing_credentials_denied_without_asc(monkeypatch: pytest.Monk
         assert called["asc"] is False
     finally:
         server.shutdown()
+
+
+def _post_handler(
+    port: int,
+    payload: bytes | dict[str, Any],
+    *,
+    authorization: str = "Bearer asc-demo",
+) -> tuple[int, dict[str, Any], dict[str, str]]:
+    data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    headers = {"Content-Type": "application/json"}
+    if authorization:
+        headers["Authorization"] = authorization
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/ext_authz/mcp/v1/tools/call",
+        data=data,
+        headers=headers,
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310
+            raw = resp.read()
+            body = json.loads(raw.decode()) if raw else {}
+            return resp.status, body, {k.lower(): v for k, v in resp.headers.items()}
+    except urllib.error.HTTPError as exc:
+        raw = exc.read()
+        body = json.loads(raw.decode()) if raw else {}
+        return exc.code, body, {k.lower(): v for k, v in exc.headers.items()}
+
+
+def test_handler_malformed_body_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(adapter, "REQUIRED_BEARER", "asc-demo")
+
+    def boom_call_asc(payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+        raise AssertionError("ASC must not be called for malformed bodies")
+
+    monkeypatch.setattr(adapter, "call_asc", boom_call_asc)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), adapter.ExtAuthzHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    _, port = server.server_address
+    try:
+        status, body, hdrs = _post_handler(port, b"{not-json")
+        assert status == 403
+        assert body["verdict"] == "BLOCK"
+        assert "malformed" in body["reason"]
+        assert hdrs.get("x-asc-verdict") == "BLOCK"
+    finally:
+        server.shutdown()
+
+
+@pytest.mark.parametrize(
+    ("verdict", "asc_http", "expect_status"),
+    [
+        ("ALLOW", 200, 200),
+        ("BLOCK", 403, 403),
+        ("REQUIRE_APPROVAL", 401, 401),
+    ],
+)
+def test_handler_do_post_maps_verdict_to_status(
+    monkeypatch: pytest.MonkeyPatch,
+    verdict: str,
+    asc_http: int,
+    expect_status: int,
+) -> None:
+    monkeypatch.setattr(adapter, "REQUIRED_BEARER", "asc-demo")
+
+    def fake_call_asc(payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+        return asc_http, {
+            "schema_version": "1.0.0",
+            "verdict": verdict,
+            "reason": f"test {verdict}",
+            "acs_disposition": {
+                "ALLOW": "ALLOW",
+                "BLOCK": "DENY",
+                "REQUIRE_APPROVAL": "ASK",
+            }[verdict],
+        }
+
+    monkeypatch.setattr(adapter, "call_asc", fake_call_asc)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), adapter.ExtAuthzHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    _, port = server.server_address
+    try:
+        status, body, hdrs = _post_handler(
+            port,
+            {
+                "scenario_id": "s",
+                "trace": {"agent_id": "a", "trace_id": "t", "calls": []},
+            },
+        )
+        assert status == expect_status
+        assert body["verdict"] == verdict
+        assert hdrs.get("x-asc-verdict") == verdict
+    finally:
+        server.shutdown()
