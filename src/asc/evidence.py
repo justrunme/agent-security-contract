@@ -15,10 +15,16 @@ def render_evidence(report: dict[str, Any]) -> str:
     metrics = report["metrics"]
     n = metrics["scenario_count"]
     scope = metrics.get("claims_scope", f"on this corpus of {n} scenarios")
+    results_ref = report.get("results_ref", "results/results.json")
+    generator = report.get("evidence_generator", "asc corpus")
+    envelope_note = report.get(
+        "envelope_note",
+        f"Each scenario row in `{results_ref}` includes a full evidence envelope.",
+    )
     lines = [
         "# Evidence",
         "",
-        "This file is **generated** from `results/results.json` by `asc corpus`.",
+        f"This file is **generated** from `{results_ref}` by {generator}.",
         "Do not edit numbers by hand; re-run the corpus to refresh.",
         "",
         f"All claims below are **{scope}** only. They do not imply general safety.",
@@ -57,7 +63,7 @@ def render_evidence(report: dict[str, Any]) -> str:
             "- Critical false-ALLOW means a high/critical abuse case received ALLOW.",
             "- Benign false-BLOCK is reported next to false-ALLOW; both are first-class.",
             "- ALLOW scenario count must be >= attack scenario count on this corpus.",
-            "- Each scenario row in `results/results.json` includes a full evidence envelope.",
+            f"- {envelope_note}",
             "- Suite time is wall-clock for the corpus evaluation in the producing process.",
             "",
         ]

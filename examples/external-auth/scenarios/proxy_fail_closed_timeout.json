@@ -1,0 +1,12 @@
+{
+  "scenario_id": "proxy_fail_closed_timeout",
+  "title": "Proxy fail-closed when authorizer times out",
+  "description": "When the ext_authz adapter hangs past Envoy timeout, the call must be denied (fail closed).",
+  "expected": "BLOCK",
+  "severity": "high",
+  "owasp_risk": "ASI02 Tool Misuse & Exploitation / Authorizer Timeout",
+  "acs_controls": ["Instrument.toolCallRequest", "disposition.DENY"],
+  "mode": "authorizer_timeout",
+  "corpus_scenario": "benign_read_workspace_file",
+  "expect_executed": false
+}

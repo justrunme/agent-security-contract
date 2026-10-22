@@ -86,3 +86,11 @@ This hook corresponds to the OWASP Agent Control Standard (ACS) Instrument hook 
 | `ALLOW` | `ALLOW` |
 | `BLOCK` | `DENY` |
 | `REQUIRE_APPROVAL` | `ASK` |
+
+## External authorization on Kubernetes (Envoy ext_authz)
+
+To enforce the same decision API as a gateway step in front of an MCP server, use the reproducible kind quickstart:
+
+[`examples/external-auth/README.md`](../examples/external-auth/README.md)
+
+Envoy `ext_authz` (`failure_mode_allow: false`) calls a thin adapter that forwards the tool-call body to ASC `POST /v1/evaluate`. Authorizer-down, authorizer-timeout, malformed bodies, and missing credentials fail closed. Evidence for that integration corpus is generated into [`docs/EVIDENCE-EXTERNAL-AUTH.md`](EVIDENCE-EXTERNAL-AUTH.md) (**on this corpus** only).

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/mvp-contract]
+    branches: [main, feat/mvp-contract, feat/external-auth-quickstart]
   pull_request:
     branches: [main]
 
@@ -122,3 +122,74 @@ jobs:
           test "${ATTACK_OUTCOME}" = "failure"
           test "${INJECT_OUTCOME}" = "failure"
           test ! -e /tmp/asc-pwned
+
+  external-auth-quickstart:
+    name: External-auth kind quickstart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Install kind and kubectl
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64" -o /tmp/kind
+          sudo install /tmp/kind /usr/local/bin/kind
+          KVER="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+          curl -fsSL "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl" -o /tmp/kubectl
+          sudo install /tmp/kubectl /usr/local/bin/kubectl
+          kind version
+          kubectl version --client
+
+      - name: Bring up kind stack
+        run: |
+          set -euo pipefail
+          chmod +x examples/external-auth/run-kind.sh
+          ./examples/external-auth/run-kind.sh | tee /tmp/asc-external-auth-url.txt
+          url="$(tail -n1 /tmp/asc-external-auth-url.txt)"
+          echo "ASC_EXTERNAL_AUTH_URL=${url}" >> "$GITHUB_ENV"
+          echo "Using ASC_EXTERNAL_AUTH_URL=${url}"
+
+      - name: Integration tests through Envoy (real ASC)
+        env:
+          ASC_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python examples/external-auth/run_integration_tests.py \
+            --results results/external-auth-results.json \
+            --summary results/external-auth-summary.md \
+            --evidence docs/EVIDENCE-EXTERNAL-AUTH.md
+
+      - name: Guard external-auth corpus
+        run: |
+          python - <<'PY'
+          import json, sys
+          report = json.loads(open("results/external-auth-results.json", encoding="utf-8").read())
+          print(json.dumps(report["metrics"], indent=2, sort_keys=True))
+          if report["metrics"]["critical_false_allow"] != 0:
+              sys.exit("critical false-ALLOW must be 0")
+          if not report["passed"]:
+              sys.exit("external-auth corpus did not pass")
+          scope = report["metrics"]["claims_scope"]
+          if "on this corpus" not in scope:
+              sys.exit(f"claims_scope must say on this corpus, got {scope!r}")
+          PY
+
+      - name: Upload external-auth artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: asc-external-auth-results
+          path: |
+            results/external-auth-results.json
+            results/external-auth-summary.md
+            docs/EVIDENCE-EXTERNAL-AUTH.md

@@ -1,0 +1,11 @@
+{
+  "scenario_id": "proxy_fail_closed_malformed",
+  "title": "Proxy fail-closed on malformed body",
+  "description": "Malformed tool-call JSON must not reach MCP; gateway fails closed with BLOCK.",
+  "expected": "BLOCK",
+  "severity": "high",
+  "owasp_risk": "ASI02 Tool Misuse & Exploitation / Malformed Tool Call",
+  "acs_controls": ["Instrument.toolCallRequest", "disposition.DENY"],
+  "mode": "malformed",
+  "expect_executed": false
+}
