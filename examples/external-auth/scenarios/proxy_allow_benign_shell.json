@@ -1,0 +1,11 @@
+{
+  "scenario_id": "proxy_allow_benign_shell",
+  "title": "Proxy ALLOW constrained shell echo",
+  "description": "Envoy ext_authz admits a constrained shell.exec after ASC ALLOW.",
+  "expected": "ALLOW",
+  "severity": "benign",
+  "owasp_risk": "n/a (benign control)",
+  "acs_controls": ["Instrument.toolCallRequest", "disposition.ALLOW"],
+  "corpus_scenario": "benign_shell_echo",
+  "expect_executed": true
+}

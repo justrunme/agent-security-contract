@@ -1,0 +1,11 @@
+{
+  "scenario_id": "proxy_allow_benign_list",
+  "title": "Proxy ALLOW benign directory list",
+  "description": "Envoy ext_authz admits a benign filesystem.list after ASC ALLOW.",
+  "expected": "ALLOW",
+  "severity": "benign",
+  "owasp_risk": "n/a (benign control)",
+  "acs_controls": ["Instrument.toolCallRequest", "disposition.ALLOW"],
+  "corpus_scenario": "benign_list_directory",
+  "expect_executed": true
+}

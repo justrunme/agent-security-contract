@@ -90,6 +90,10 @@ Call the evaluator **before** tool execution (library or HTTP sidecar). See [`do
 python -m asc.sidecar --policy policy/demo-agent.policy.yaml --port 8788
 ```
 
+### External auth on Kubernetes
+
+Envoy `ext_authz` in front of an MCP server, calling the real ASC decision API (kind + script): [`examples/external-auth/README.md`](examples/external-auth/README.md). Integration evidence: [`docs/EVIDENCE-EXTERNAL-AUTH.md`](docs/EVIDENCE-EXTERNAL-AUTH.md) (**on this corpus**).
+
 ## Policy contract
 
 YAML policy (`policy/demo-agent.policy.yaml`) declares:
@@ -154,7 +158,7 @@ python -m pytest --collect-only -q
 python -m pytest -q
 ```
 
-CI (`.github/workflows/ci.yml`) runs a clean-install `pytest --collect-only` gate, lint, unit tests (including fail-closed and envelope negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, and regenerates `docs/EVIDENCE.md`. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
+CI (`.github/workflows/ci.yml`) runs a clean-install `pytest --collect-only` gate, lint, unit tests (including fail-closed and envelope negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, regenerates `docs/EVIDENCE.md`, and runs the Envoy external-auth kind quickstart job. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
 
 ## Security
 
