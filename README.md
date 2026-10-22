@@ -160,6 +160,14 @@ python -m pytest -q
 
 CI (`.github/workflows/ci.yml`) runs a clean-install `pytest --collect-only` gate, lint, unit tests (including fail-closed and envelope negatives), the full corpus, writes `results/results.json` + markdown summary as artifacts, regenerates `docs/EVIDENCE.md`, and runs the Envoy external-auth kind quickstart job. Workflow `permissions: contents: read`; Actions pinned by commit SHA.
 
+## Related on justrunme.com
+
+- [Agent Security Contract case study](https://justrunme.com/cases/agent-security-contract/)
+- [Agent security on Kubernetes](https://justrunme.com/agent-security/)
+- [MCP security checklist for Kubernetes](https://justrunme.com/guides/mcp-security-checklist-kubernetes/)
+- [OWASP Agentic Top 10 on Kubernetes](https://justrunme.com/guides/owasp-agentic-top-10-kubernetes/)
+- [AI agent audit trail](https://justrunme.com/guides/ai-agent-audit-trail/)
+
 ## Security
 
 See [SECURITY.md](SECURITY.md).
