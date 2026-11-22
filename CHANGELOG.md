@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-11-22
+
 ### Added
 
+- MCP server with four read-only fail-closed tools and `asc-mcp` console script: `asc/verify_corpus`, `asc/check_trace`, `asc/list_scenarios`, and `asc/get_policy_summary` for pre-execution enforcement from MCP-aware clients.
 - External-auth quickstart (`examples/external-auth`): kind cluster with Envoy
   `ext_authz` calling the real ASC `/v1/evaluate` sidecar in front of an MCP
   demo server; integration corpus (allow / block / require-approval plus

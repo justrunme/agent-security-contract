@@ -7,12 +7,12 @@
     "url": "https://github.com/justrunme/agent-security-contract",
     "source": "github"
   },
-  "version": "0.2.1",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "agent-security-contract",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "transport": {
         "type": "stdio",
         "command": "asc-mcp"
