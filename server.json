@@ -3,16 +3,17 @@
   "name": "io.github.justrunme/agent-security-contract",
   "title": "Agent Security Contract",
   "description": "Fail-closed security contract for AI agents and MCP tool calls with pre-execution enforcement.",
+  "websiteUrl": "https://justrunme.com/cases/agent-security-contract/",
   "repository": {
     "url": "https://github.com/justrunme/agent-security-contract",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "agent-security-contract",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "transport": {
         "type": "stdio",
         "command": "asc-mcp"

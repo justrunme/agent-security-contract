@@ -4,18 +4,58 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-security-contract"
-version = "0.3.0"
+version = "0.3.1"
 description = "Fail-closed security contract for AI agents and MCP tool calls"
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [
   { name = "Andrey Lesnikov", email = "52860508+justrunme@users.noreply.github.com" },
+]
+keywords = [
+  "ai-agents",
+  "mcp",
+  "model-context-protocol",
+  "authorization",
+  "fail-closed",
+  "agent-security",
+  "policy-enforcement",
+  "llm-security",
+  "tool-calling",
+  "prompt-injection",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Intended Audience :: Science/Research",
+  "Topic :: Security",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: OS Independent",
 ]
 dependencies = [
   "PyYAML>=6.0.1",
   "mcp>=1.0.0,<2.0.0",
 ]
+
+[project.urls]
+Homepage = "https://justrunme.com/cases/agent-security-contract/"
+Repository = "https://github.com/justrunme/agent-security-contract"
+Documentation = "https://github.com/justrunme/agent-security-contract#readme"
+Changelog = "https://github.com/justrunme/agent-security-contract/blob/main/CHANGELOG.md"
+Issues = "https://github.com/justrunme/agent-security-contract/issues"
+Research = "https://justrunme.com/research/fail-closed-authorization-ai-agents/"
+Preprint = "https://doi.org/10.5281/zenodo.24075886"
+Book = "https://justrunme.com/book/"
+"Live demo" = "https://huggingface.co/spaces/justrunme/agent-security-contract"
+Author = "https://justrunme.com/"
+ORCID = "https://orcid.org/0009-0004-7583-4314"
 
 [project.optional-dependencies]
 test = [
