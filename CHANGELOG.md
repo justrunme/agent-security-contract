@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-11-22
+
+### Added
+
+- Complete PyPI package metadata: keywords (ai-agents, mcp, model-context-protocol, authorization, fail-closed, agent-security, policy-enforcement, llm-security, tool-calling, prompt-injection), classifiers (Development Status, Intended Audience, Topic, Programming Language, Operating System), and project URLs (Homepage, Repository, Documentation, Changelog, Issues, Research, Preprint, Book, Live demo, Author, ORCID).
+- README: Research and book section with preprint DOI (https://doi.org/10.5281/zenodo.24075886), research page, book link, and live Hugging Face demo.
+- README: Enhanced author section with Cloud Native Rockstar Awards 2026 (3rd place) and links.
+- MCP server.json: `websiteUrl` field.
+
+### Changed
+
+- README: Converted all relative links to absolute GitHub URLs for proper PyPI rendering.
+- pyproject.toml: License field changed from TOML table to SPDX string to avoid deprecation warnings.
+- Package version bumped to 0.3.1.
+
 ## [0.3.0] — 2026-11-22
 
 ### Added

@@ -3,11 +3,11 @@
 <!-- mcp-name: io.github.justrunme/agent-security-contract -->
 
 [![CI](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/justrunme/agent-security-contract/blob/main/LICENSE)
 
 Fail-closed security contract for AI agents and MCP tool calls.
 
-ASC is a **platform gate**: given an approved policy and a tool-call trace, it emits a CI-grade evidence envelope with verdict `ALLOW` | `BLOCK` | `REQUIRE_APPROVAL`. It is backed by an executable abuse-case corpus. Numbers in [`docs/EVIDENCE.md`](docs/EVIDENCE.md) are generated from `results/results.json` — never hand-typed.
+ASC is a **platform gate**: given an approved policy and a tool-call trace, it emits a CI-grade evidence envelope with verdict `ALLOW` | `BLOCK` | `REQUIRE_APPROVAL`. It is backed by an executable abuse-case corpus. Numbers in [`docs/EVIDENCE.md`](https://github.com/justrunme/agent-security-contract/blob/main/docs/EVIDENCE.md) are generated from `results/results.json` — never hand-typed.
 
 **Claims are scoped:** metrics and pass/fail statements apply **on this corpus of N scenarios** only. They do not imply general agent safety.
 
@@ -86,7 +86,7 @@ python -m asc corpus \
 
 ### Runtime integration
 
-Call the evaluator **before** tool execution (library or HTTP sidecar). See [`docs/INTEGRATION.md`](docs/INTEGRATION.md). On sidecar/client timeout, fail closed (`BLOCK`); `asc.client.evaluate_remote()` does this for you.
+Call the evaluator **before** tool execution (library or HTTP sidecar). See [`docs/INTEGRATION.md`](https://github.com/justrunme/agent-security-contract/blob/main/docs/INTEGRATION.md). On sidecar/client timeout, fail closed (`BLOCK`); `asc.client.evaluate_remote()` does this for you.
 
 ```bash
 python -m asc.sidecar --policy policy/demo-agent.policy.yaml --port 8788
@@ -159,7 +159,7 @@ All tools are read-only (they inspect policy and traces but do not modify state)
 
 ### External auth on Kubernetes
 
-Envoy `ext_authz` in front of an MCP server, calling the real ASC decision API (kind + script): [`examples/external-auth/README.md`](examples/external-auth/README.md). Integration evidence: [`docs/EVIDENCE-EXTERNAL-AUTH.md`](docs/EVIDENCE-EXTERNAL-AUTH.md) (**on this corpus**).
+Envoy `ext_authz` in front of an MCP server, calling the real ASC decision API (kind + script): [`examples/external-auth/README.md`](https://github.com/justrunme/agent-security-contract/blob/main/examples/external-auth/README.md). Integration evidence: [`docs/EVIDENCE-EXTERNAL-AUTH.md`](https://github.com/justrunme/agent-security-contract/blob/main/docs/EVIDENCE-EXTERNAL-AUTH.md) (**on this corpus**).
 
 ## Policy contract
 
@@ -175,7 +175,7 @@ YAML policy (`policy/demo-agent.policy.yaml`) declares:
 
 ## Evidence envelope
 
-Every verdict emits JSON conforming to [`schemas/evidence-envelope.schema.json`](schemas/evidence-envelope.schema.json):
+Every verdict emits JSON conforming to [`schemas/evidence-envelope.schema.json`](https://github.com/justrunme/agent-security-contract/blob/main/schemas/evidence-envelope.schema.json):
 
 | Field | Meaning |
 | --- | --- |
@@ -195,7 +195,7 @@ Every verdict emits JSON conforming to [`schemas/evidence-envelope.schema.json`]
 
 ## Corpus metrics (generated)
 
-See [`docs/EVIDENCE.md`](docs/EVIDENCE.md) for the current run. Metrics are always phrased **on this corpus of N scenarios**.
+See [`docs/EVIDENCE.md`](https://github.com/justrunme/agent-security-contract/blob/main/docs/EVIDENCE.md) for the current run. Metrics are always phrased **on this corpus of N scenarios**.
 
 Positive coverage is first-class: legitimate `ALLOW` scenarios are at least as numerous as attack scenarios; benign false-BLOCK is reported next to critical false-ALLOW.
 
@@ -214,7 +214,7 @@ Use it as a CI / admission gate alongside runtime controls, Promptfoo-style red 
 
 ## Upstream
 
-Possible OWASP upstream contributions: [`docs/UPSTREAM.md`](docs/UPSTREAM.md).
+Possible OWASP upstream contributions: [`docs/UPSTREAM.md`](https://github.com/justrunme/agent-security-contract/blob/main/docs/UPSTREAM.md).
 
 ## Development
 
@@ -235,11 +235,20 @@ CI (`.github/workflows/ci.yml`) runs a clean-install `pytest --collect-only` gat
 - [OWASP Agentic Top 10 on Kubernetes](https://justrunme.com/guides/owasp-agentic-top-10-kubernetes/)
 - [AI agent audit trail](https://justrunme.com/guides/ai-agent-audit-trail/)
 
+## Research and book
+
+The preprint ['Fail-Closed Authorization for Tool-Using AI Agents'](https://doi.org/10.5281/zenodo.24075886) is available on Zenodo. Additional context and analysis: [Fail-Closed Authorization for AI Agents](https://justrunme.com/research/fail-closed-authorization-ai-agents/).
+
+The book [*Prove It Before Production: Evidence-Driven Infrastructure Engineering for Kubernetes and AI*](https://justrunme.com/book/) ([Amazon author page](https://www.amazon.com/author/justrunme)) covers fail-closed authorization patterns and evidence-driven CI for AI agents.
+
+Live demo: [Hugging Face Space](https://huggingface.co/spaces/justrunme/agent-security-contract)
+
 ## Author
 
-Andrey Lesnikov — Senior DevOps & AI Platform Engineer  
-https://orcid.org/0009-0004-7583-4314
+Andrey Lesnikov — Senior DevOps & AI Platform Engineer, independent researcher in fail-closed authorization for AI agents. 3rd place, Cloud Native Rockstar Awards 2026 (Cloud Native Conference 2026, Frankfurt).
+
+Links: [justrunme.com](https://justrunme.com/) • [GitHub](https://github.com/justrunme) • [ORCID](https://orcid.org/0009-0004-7583-4314)
 
 ## Security
 
-See [SECURITY.md](SECURITY.md).
+See [SECURITY.md](https://github.com/justrunme/agent-security-contract/blob/main/SECURITY.md).
