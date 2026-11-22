@@ -239,7 +239,7 @@ CI (`.github/workflows/ci.yml`) runs a clean-install `pytest --collect-only` gat
 
 The preprint ['Fail-Closed Authorization for Tool-Using AI Agents'](https://doi.org/10.5281/zenodo.24075886) is available on Zenodo. Additional context and analysis: [Fail-Closed Authorization for AI Agents](https://justrunme.com/research/fail-closed-authorization-ai-agents/).
 
-The book [*Prove It Before Production: Evidence-Driven Infrastructure Engineering for Kubernetes and AI*](https://justrunme.com/book/) ([Amazon author page](https://www.amazon.com/author/justrunme)) covers fail-closed authorization patterns and evidence-driven CI for AI agents.
+The book [*Prove It Before Production: Evidence-Driven Infrastructure Engineering for Kubernetes and AI*](https://justrunme.com/book/) ([Amazon author page](https://www.amazon.com/author/justrunme)) is about proving that an infrastructure change is safe before it reaches production: reconstruct live state, rehearse the change, emit an explicit ALLOW / BLOCK / REQUIRE_APPROVAL verdict, and fail closed when evidence is missing (Chapter 7). Part IV (Chapters 11-14) applies the same contracts to AI agents on the control plane, including agent security contracts (Chapter 12), inference budgets and GPU admission.
 
 Live demo: [Hugging Face Space](https://huggingface.co/spaces/justrunme/agent-security-contract)
 
