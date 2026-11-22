@@ -1,5 +1,7 @@
 # agent-security-contract
 
+<!-- mcp-name: io.github.justrunme/agent-security-contract -->
+
 [![CI](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/justrunme/agent-security-contract/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
@@ -89,6 +91,71 @@ Call the evaluator **before** tool execution (library or HTTP sidecar). See [`do
 ```bash
 python -m asc.sidecar --policy policy/demo-agent.policy.yaml --port 8788
 ```
+
+## MCP server
+
+ASC exposes its policy engine as a [Model Context Protocol](https://modelcontextprotocol.io/) server. MCP clients (Claude Desktop, Cursor, etc.) can call ASC tools to enforce security contracts before executing tool calls.
+
+### Install
+
+```bash
+pip install agent-security-contract
+```
+
+Or from source:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+### Configure for Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "agent-security-contract": {
+      "command": "asc-mcp"
+    }
+  }
+}
+```
+
+### Configure for Cursor
+
+Add to Cursor MCP settings (Settings → Features → MCP Servers):
+
+```json
+{
+  "mcpServers": {
+    "agent-security-contract": {
+      "command": "asc-mcp"
+    }
+  }
+}
+```
+
+### Run standalone (stdio)
+
+```bash
+asc-mcp
+```
+
+### Run as streamable HTTP server
+
+```bash
+asc-mcp --transport streamable-http --host 127.0.0.1 --port 8765
+```
+
+### Available tools
+
+- **check_tool_call**: Check a proposed tool call against a policy contract. Returns PASS/BLOCK/REQUIRE_APPROVAL verdict with reasons. Fail-closed: any error yields BLOCK.
+- **verify_corpus**: Run the full abuse-case corpus and return metrics (critical false-ALLOW, benign false-BLOCK rate, pass/fail).
+- **verify_scenario**: Verify a single corpus scenario file against a policy.
+- **list_policy_tools**: List loaded policies, capability catalog, digest, and per-agent tool allowlists.
+
+All tools are read-only (they inspect policy and traces but do not modify state).
 
 ### External auth on Kubernetes
 
